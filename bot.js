@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, MessageActionRow, MessageButton } = require('discord.js');
+const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -47,7 +47,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       const teamData = response.data.values || [];
-      const embed = new Discord.EmbedBuilder()
+      const embed = new EmbedBuilder()
         .setTitle('Team Status')
         .setDescription('Here is the current status of all teams:')
         .setColor('#00ff00');
@@ -55,7 +55,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       teamData.forEach((row) => {
         const [teamName, currentLocation] = row;
         const teamEmoji = getTeamEmoji(teamName);
-        embed.addField(`${teamEmoji} ${teamName}`, `Current Location: ${currentLocation}`, true);
+        embed.addFields({ 
+          name: `${teamEmoji} ${teamName}`, 
+          value: `Current Location: ${currentLocation}`, 
+          inline: true 
+        });
       });
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
