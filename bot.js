@@ -1,11 +1,11 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// Initialize Discord Client
+// Client setup
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -14,12 +14,9 @@ const client = new Client({
   ],
 });
 
-// Environment Variables
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
-
-// Create and Write Credentials File
 fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
 
 const auth = new GoogleAuth({
@@ -29,14 +26,45 @@ const auth = new GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-// Google Sheets ID
+// Your Google Sheets ID
 const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
-// Command Handling
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return; // Ignore messages from bots
+// Register slash commands
+const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
-  if (message.content.startsWith('!example')) {
+(async () => {
+  try {
+    console.log('Started refreshing application (/) commands.');
+
+    await rest.put(Routes.applicationCommands(client.user.id), {
+      body: [
+        {
+          name: 'example',
+          description: 'Fetch data from Google Sheets',
+        },
+        {
+          name: 'status',
+          description: 'Check the status of something',
+        },
+        {
+          name: 'explore',
+          description: 'Explore a map or execute an explore-related action',
+        },
+      ],
+    });
+
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+})();
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'example') {
     const range = 'Teams!A1:D10'; // Adjust this range as needed
 
     try {
@@ -44,17 +72,17 @@ client.on('messageCreate', async (message) => {
         spreadsheetId,
         range,
       });
-      message.channel.send(`Spreadsheet Data: ${JSON.stringify(response.data.values)}`);
+      await interaction.reply(`Spreadsheet Data: ${JSON.stringify(response.data.values)}`);
     } catch (error) {
       console.error('Error fetching data from Google Sheets:', error);
-      message.channel.send('Failed to fetch data from Google Sheets.');
+      await interaction.reply('Failed to fetch data from Google Sheets.');
     }
-  } else if (message.content.startsWith('!status')) {
+  } else if (commandName === 'status') {
     // Add your status command logic here
-    message.channel.send('Status command is not yet implemented.');
-  } else if (message.content.startsWith('!explore')) {
+    await interaction.reply('Status command executed!');
+  } else if (commandName === 'explore') {
     // Add your explore command logic here
-    message.channel.send('Explore command is not yet implemented.');
+    await interaction.reply('Explore command executed!');
   }
 });
 
@@ -62,10 +90,4 @@ client.once('ready', () => {
   console.log('Bot is online!');
 });
 
-// Login to Discord
 client.login(DISCORD_TOKEN);
-
-// Clean up credentials file if not needed later
-process.on('exit', () => {
-  fs.unlinkSync(credentialsPath);
-});
