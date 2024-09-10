@@ -1,77 +1,50 @@
-require('dotenv').config();
-const { Client, Intents } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
+const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+require('dotenv').config(); // Ensure this is at the top
 
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+// Setup Discord bot
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
-const TOKEN = process.env.DISCORD_TOKEN;
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+// Bot token from the Discord Developer Portal
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-// Decode the Base64-encoded credentials
+// Decode Base64 credentials and write to a temporary file
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
-const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString('utf-8');
-const credentials = JSON.parse(credentialsJson);
+const credentialsPath = path.join(__dirname, 'credentials.json');
+fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
 
-const auth = new google.auth.GoogleAuth({
-  credentials,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+// Google Sheets API setup
+const auth = new GoogleAuth({
+  keyFile: credentialsPath,
+  scopes: 'https://www.googleapis.com/auth/spreadsheets',
 });
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-});
-
-client.on('messageCreate', async message => {
-  if (message.author.bot) return;
-
-  const args = message.content.split(' ');
-  const command = args.shift().toLowerCase();
-
-  if (command === '!progress') {
-    const teamName = args.join(' ');
-    if (!teamName) {
-      message.channel.send('Please specify a team name.');
-      return;
-    }
-
+// Example command handler
+client.on('messageCreate', async (message) => {
+  if (message.content === '!example') {
+    const spreadsheetId = 'YOUR_SPREADSHEET_ID'; // Replace with your actual spreadsheet ID
+    const range = 'Teams!A1:D10'; // Adjust the range as needed
+    
     try {
       const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `Teams!A:D`
+        spreadsheetId,
+        range,
       });
-
-      const rows = response.data.values;
-      const teamData = rows.find(row => row[0] === teamName);
-
-      if (teamData) {
-        const [team, location, exploredTiles, status] = teamData;
-        message.channel.send(`Team: ${team}\nLocation: ${location}\nExplored Tiles: ${exploredTiles}\nStatus: ${status}`);
-      } else {
-        message.channel.send('Team not found.');
-      }
+      message.channel.send(`Spreadsheet Data: ${JSON.stringify(response.data.values)}`);
     } catch (error) {
-      console.error('Error fetching team data:', error);
-      message.channel.send('Error fetching team data.');
+      console.error('Error fetching data from Google Sheets:', error);
+      message.channel.send('Failed to fetch data from Google Sheets.');
     }
-  } else if (command === '!move') {
-    const teamName = args.shift();
-    const direction = args.join(' ');
-
-    if (!teamName || !direction) {
-      message.channel.send('Please specify a team name and direction.');
-      return;
-    }
-
-    message.channel.send(`Moving team ${teamName} ${direction}.`);
   }
 });
 
-client.on('error', error => {
-  console.error('Discord.js error:', error);
+client.once('ready', () => {
+  console.log('Bot is online!');
 });
 
-client.login(TOKEN);
+client.login(DISCORD_TOKEN);
