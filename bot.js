@@ -1,11 +1,10 @@
-const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// Client setup
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -26,39 +25,14 @@ const auth = new GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-// Your Google Sheets ID
 const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
-// Register slash commands
-client.once('ready', async () => {
-  try {
-    console.log('Started refreshing application (/) commands.');
-
-    const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
-    await rest.put(Routes.applicationCommands(client.user.id), {
-      body: [
-        {
-          name: 'example',
-          description: 'Fetch data from Google Sheets',
-        },
-        {
-          name: 'status',
-          description: 'Check the status of something',
-        },
-        {
-          name: 'explore',
-          description: 'Explore a map or execute an explore-related action',
-        },
-      ],
-    });
-
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error('Error registering commands:', error);
-  }
+client.on('ready', () => {
+  console.log('Bot is online!');
+  registerCommands();
 });
 
-client.on('interactionCreate', async (interaction) => {
+client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
   const { commandName } = interaction;
@@ -71,22 +45,95 @@ client.on('interactionCreate', async (interaction) => {
         spreadsheetId,
         range,
       });
-      await interaction.reply(`Spreadsheet Data: ${JSON.stringify(response.data.values)}`);
+
+      const data = response.data.values;
+      const embed = new EmbedBuilder()
+        .setTitle('Team Status')
+        .setDescription('Here is the current status of the teams.')
+        .setColor('#00ff00'); // Choose a color for the embed
+
+      data.forEach(row => {
+        const [teamName, currentLocation, exploredTiles, status] = row;
+        const emoji = getTeamEmoji(teamName); // Function to get emoji based on team name
+        embed.addFields({
+          name: `${emoji} ${teamName}`,
+          value: `Current Tile: ${currentLocation}\nStatus: ${status}`,
+          inline: true,
+        });
+      });
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
     } catch (error) {
       console.error('Error fetching data from Google Sheets:', error);
-      await interaction.reply('Failed to fetch data from Google Sheets.');
+      await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
     }
-  } else if (commandName === 'status') {
-    // Add your status command logic here
-    await interaction.reply('Status command executed!');
-  } else if (commandName === 'explore') {
-    // Add your explore command logic here
-    await interaction.reply('Explore command executed!');
+  } else if (commandName === 'moveteam') {
+    const member = interaction.member;
+
+    // Check if user has the 'admin' role
+    if (!member.roles.cache.some(role => role.name === 'admin')) {
+      await interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+      return;
+    }
+
+    const team = interaction.options.getString('team');
+    const direction = interaction.options.getString('direction');
+    
+    // Handle the /moveteam logic here
+    // For example, you could update the team position in your Google Sheet or a database
+
+    await interaction.reply({ content: `Moved team ${team} ${direction}.`, ephemeral: true });
   }
 });
 
-client.once('ready', () => {
-  console.log('Bot is online!');
-});
-
 client.login(DISCORD_TOKEN);
+
+async function registerCommands() {
+  const commands = [
+    {
+      name: 'example',
+      description: 'Fetches and displays team data from Google Sheets.',
+    },
+    {
+      name: 'moveteam',
+      description: 'Move a team to a new tile (Admin only).',
+      options: [
+        {
+          type: 3, // STRING
+          name: 'team',
+          description: 'The team to move.',
+          required: true,
+        },
+        {
+          type: 3, // STRING
+          name: 'direction',
+          description: 'The direction to move the team (e.g., up, down, left, right).',
+          required: true,
+        },
+      ],
+    },
+  ];
+
+  const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
+
+  try {
+    console.log('Started refreshing application (/) commands.');
+    await rest.put(Routes.applicationCommands(client.user.id), {
+      body: commands,
+    });
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function getTeamEmoji(teamName) {
+  // Return emoji based on team name, adjust as necessary
+  const emojis = {
+    'Red': '🔴',
+    'Blue': '🔵',
+    'Green': '🟢',
+    'Yellow': '🟡',
+  };
+  return emojis[teamName] || '🔘';
+}
