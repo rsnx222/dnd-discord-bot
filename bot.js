@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Events, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -28,16 +28,47 @@ const sheets = google.sheets({ version: 'v4', auth });
 // Your Google Sheets ID
 const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
-client.once(Events.ClientReady, () => {
+client.on(Events.ClientReady, () => {
   console.log('Bot is online!');
+
+  // Registering commands
+  const commands = [
+    {
+      name: 'locations',
+      description: 'Show the current locations of all teams.',
+    },
+    {
+      name: 'moveteam',
+      description: 'Move a team to a new tile.',
+      options: [
+        {
+          type: 3, // STRING
+          name: 'team',
+          description: 'Name of the team to move.',
+          required: true,
+        },
+        {
+          type: 3, // STRING
+          name: 'direction',
+          description: 'Direction to move the team (up, down, left, right, up-left, up-right, down-left, down-right).',
+          required: true,
+        },
+      ],
+    },
+  ];
+
+  client.application.commands.set(commands)
+    .then(() => console.log('Slash commands registered'))
+    .catch(console.error);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
 
-  const { commandName } = interaction;
+  const { commandName, options, user, member } = interaction;
 
-  if (commandName === 'example') {
+  if (commandName === 'locations') {
+    // Handle /locations command
     const range = 'Teams!A1:D10'; // Adjust this range as needed
 
     try {
@@ -46,137 +77,84 @@ client.on(Events.InteractionCreate, async (interaction) => {
         range,
       });
 
-      const teamData = response.data.values || [];
-      const embed = new EmbedBuilder()
-        .setTitle('Team Status')
-        .setDescription('Here is the current status of all teams:')
-        .setColor('#00ff00');
+      const teamData = response.data.values;
 
-      teamData.forEach((row) => {
-        const [teamName, currentLocation] = row;
-        const teamEmoji = getTeamEmoji(teamName);
-        embed.addFields({ 
-          name: `${teamEmoji} ${teamName}`, 
-          value: `Current Location: ${currentLocation}`, 
-          inline: true 
-        });
-      });
+      // Build the visual response
+      const locations = teamData.map(row => {
+        const [teamName, location] = row;
+        const emoji = getEmojiForTeam(teamName); // Get the emoji for the team
+        return `${emoji} ${teamName} is at ${location}`;
+      }).join('\n');
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ content: `Current Team Locations:\n${locations}`, ephemeral: true });
     } catch (error) {
       console.error('Error fetching data from Google Sheets:', error);
       await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
     }
   } else if (commandName === 'moveteam') {
-    const member = interaction.member;
-
+    // Handle /moveteam command
     if (!member.roles.cache.some(role => role.name === 'admin')) {
-      await interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-      return;
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
-    const teamName = interaction.options.getString('team');
-    const direction = interaction.options.getString('direction');
+    const teamName = options.getString('team');
+    const direction = options.getString('direction');
 
     try {
-      await moveTeamAndTrackExploration(teamName, direction);
-      await interaction.reply({ content: `Moved team ${teamName} ${direction}.`, ephemeral: true });
+      const teamSheet = sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Teams!A2:D',
+      });
+
+      const teamData = teamSheet.data.values;
+
+      const teamIndex = teamData.findIndex(row => row[0] === teamName);
+      if (teamIndex === -1) {
+        return interaction.reply({ content: 'Team not found.', ephemeral: true });
+      }
+
+      const currentLocation = teamData[teamIndex][1];
+      const [currentRowLetter, currentColumnStr] = currentLocation.split(/(\d+)/);
+      const currentColumn = parseInt(currentColumnStr, 10);
+
+      const newTile = calculateNewTile(currentRowLetter, currentColumn, direction);
+
+      if (!newTile) {
+        return interaction.reply({ content: 'Invalid move direction.', ephemeral: true });
+      }
+
+      const range = `Teams!B${teamIndex + 2}`;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [[newTile]],
+        },
+      });
+
+      await interaction.reply({ content: `Moved team ${teamName} to ${newTile}.`, ephemeral: true });
     } catch (error) {
-      console.error('Error moving team:', error);
-      await interaction.reply({ content: 'Failed to move team.', ephemeral: true });
+      console.error('Error updating team location:', error);
+      await interaction.reply({ content: 'Failed to update team location.', ephemeral: true });
     }
   }
 });
 
-// Add command handling and register slash commands
-client.on(Events.ClientReady, async () => {
-  const commands = [
-    {
-      name: 'example',
-      description: 'Fetch data from Google Sheets and display it',
-    },
-    {
-      name: 'moveteam',
-      description: 'Move a team to a new tile',
-      options: [
-        {
-          type: 3,
-          name: 'team',
-          description: 'Name of the team to move',
-          required: true,
-        },
-        {
-          type: 3,
-          name: 'direction',
-          description: 'Direction to move (e.g., up, down, left, right)',
-          required: true,
-        },
-      ],
-    },
-  ];
-
-  try {
-    await client.application.commands.set(commands);
-    console.log('Slash commands registered');
-  } catch (error) {
-    console.error('Error registering commands:', error);
-  }
-});
-
-// Function to get team emoji
-function getTeamEmoji(teamName) {
+function getEmojiForTeam(teamName) {
+  // Customize this mapping to suit your needs
   const emojis = {
-    'Red': '🔴',
+    'Pink': '🩷',
     'Blue': '🔵',
     'Green': '🟢',
     'Yellow': '🟡',
-    // Add more team names and their corresponding emojis
   };
-  return emojis[teamName] || '🔘'; // Default emoji if team not found
+  return emojis[teamName] || '🔘';
 }
 
-// Function to handle team movement and exploration tracking
-async function moveTeamAndTrackExploration(teamName, direction) {
-  const teamSheet = sheets.spreadsheets.values;
-  const range = 'Teams!A2:D';
-  
-  try {
-    const response = await teamSheet.get({
-      spreadsheetId,
-      range,
-    });
-    
-    const teamData = response.data.values;
-    const teamIndex = teamData.findIndex(row => row[0] === teamName);
-    if (teamIndex === -1) throw new Error('Team not found');
-    
-    const [currentLocation] = teamData[teamIndex];
-    const newTile = calculateNewTile(currentLocation, direction);
-    
-    if (!newTile) throw new Error('Invalid move');
-    
-    // Update the team's location
-    const newExploredTiles = (teamData[teamIndex][2] || '').split(',').concat(newTile).join(',');
-    await teamSheet.update({
-      spreadsheetId,
-      range: `Teams!B${teamIndex + 2}:D${teamIndex + 2}`,
-      valueInputOption: 'RAW',
-      resource: {
-        values: [[newTile, newExploredTiles]],
-      },
-    });
-    
-    console.log(`Moved team ${teamName} to ${newTile}`);
-  } catch (error) {
-    console.error('Error updating team location:', error);
-  }
-}
+function calculateNewTile(currentRowLetter, currentColumn, direction) {
+  if (!currentRowLetter || !currentColumn) return null;
 
-// Function to calculate new tile based on direction
-function calculateNewTile(currentTile, direction) {
-  if (!currentTile) return null;
-
-  const [currentRowLetter, currentColumn] = [currentTile.charAt(0), parseInt(currentTile.slice(1))];
   const currentRowNumber = currentRowLetter.charCodeAt(0) - 64;
   let newRowNumber = currentRowNumber;
   let newColumn = currentColumn;
@@ -190,12 +168,14 @@ function calculateNewTile(currentTile, direction) {
     case 'up-right': newRowNumber -= 1; newColumn += 1; break;
     case 'down-left': newRowNumber += 1; newColumn -= 1; break;
     case 'down-right': newRowNumber += 1; newColumn += 1; break;
+    default: return null;
   }
 
-  if (newRowNumber < 1 || newColumn < 1) return null;
+  // Prevent moving out of bounds
+  if (newRowNumber < 1 || newColumn < 1 || newRowNumber > 5 || newColumn > 10) return null;
 
   const newRowLetter = String.fromCharCode(newRowNumber + 64);
-  return newRowLetter + newColumn;
+  return `${newRowLetter}${newColumn}`;
 }
 
 client.login(DISCORD_TOKEN);
