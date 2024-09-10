@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Events, MessageActionRow, MessageButton } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -25,14 +25,14 @@ const auth = new GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
+// Your Google Sheets ID
 const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
-client.on('ready', () => {
+client.once(Events.ClientReady, () => {
   console.log('Bot is online!');
-  registerCommands();
 });
 
-client.on('interactionCreate', async interaction => {
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
 
   const { commandName } = interaction;
@@ -46,20 +46,16 @@ client.on('interactionCreate', async interaction => {
         range,
       });
 
-      const data = response.data.values;
-      const embed = new EmbedBuilder()
+      const teamData = response.data.values || [];
+      const embed = new Discord.EmbedBuilder()
         .setTitle('Team Status')
-        .setDescription('Here is the current status of the teams.')
-        .setColor('#00ff00'); // Choose a color for the embed
+        .setDescription('Here is the current status of all teams:')
+        .setColor('#00ff00');
 
-      data.forEach(row => {
-        const [teamName, currentLocation, exploredTiles, status] = row;
-        const emoji = getTeamEmoji(teamName); // Function to get emoji based on team name
-        embed.addFields({
-          name: `${emoji} ${teamName}`,
-          value: `Current Tile: ${currentLocation}\nStatus: ${status}`,
-          inline: true,
-        });
+      teamData.forEach((row) => {
+        const [teamName, currentLocation] = row;
+        const teamEmoji = getTeamEmoji(teamName);
+        embed.addField(`${teamEmoji} ${teamName}`, `Current Location: ${currentLocation}`, true);
       });
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -70,70 +66,132 @@ client.on('interactionCreate', async interaction => {
   } else if (commandName === 'moveteam') {
     const member = interaction.member;
 
-    // Check if user has the 'admin' role
     if (!member.roles.cache.some(role => role.name === 'admin')) {
       await interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
       return;
     }
 
-    const team = interaction.options.getString('team');
+    const teamName = interaction.options.getString('team');
     const direction = interaction.options.getString('direction');
-    
-    // Handle the /moveteam logic here
-    // For example, you could update the team position in your Google Sheet or a database
 
-    await interaction.reply({ content: `Moved team ${team} ${direction}.`, ephemeral: true });
+    try {
+      await moveTeamAndTrackExploration(teamName, direction);
+      await interaction.reply({ content: `Moved team ${teamName} ${direction}.`, ephemeral: true });
+    } catch (error) {
+      console.error('Error moving team:', error);
+      await interaction.reply({ content: 'Failed to move team.', ephemeral: true });
+    }
   }
 });
 
-client.login(DISCORD_TOKEN);
-
-async function registerCommands() {
+// Add command handling and register slash commands
+client.on(Events.ClientReady, async () => {
   const commands = [
     {
       name: 'example',
-      description: 'Fetches and displays team data from Google Sheets.',
+      description: 'Fetch data from Google Sheets and display it',
     },
     {
       name: 'moveteam',
-      description: 'Move a team to a new tile (Admin only).',
+      description: 'Move a team to a new tile',
       options: [
         {
-          type: 3, // STRING
+          type: 3,
           name: 'team',
-          description: 'The team to move.',
+          description: 'Name of the team to move',
           required: true,
         },
         {
-          type: 3, // STRING
+          type: 3,
           name: 'direction',
-          description: 'The direction to move the team (e.g., up, down, left, right).',
+          description: 'Direction to move (e.g., up, down, left, right)',
           required: true,
         },
       ],
     },
   ];
 
-  const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
-
   try {
-    console.log('Started refreshing application (/) commands.');
-    await rest.put(Routes.applicationCommands(client.user.id), {
-      body: commands,
-    });
-    console.log('Successfully reloaded application (/) commands.');
+    await client.application.commands.set(commands);
+    console.log('Slash commands registered');
   } catch (error) {
-    console.error(error);
+    console.error('Error registering commands:', error);
   }
-}
+});
 
+// Function to get team emoji
 function getTeamEmoji(teamName) {
-  // Return emoji based on team name, adjust as necessary
   const emojis = {
     'Red': '🔴',
     'Blue': '🔵',
     'Green': '🟢',
     'Yellow': '🟡',
+    // Add more team names and their corresponding emojis
   };
-  return emojis[teamName] || '🔘';
+  return emojis[teamName] || '🔘'; // Default emoji if team not found
 }
+
+// Function to handle team movement and exploration tracking
+async function moveTeamAndTrackExploration(teamName, direction) {
+  const teamSheet = sheets.spreadsheets.values;
+  const range = 'Teams!A2:D';
+  
+  try {
+    const response = await teamSheet.get({
+      spreadsheetId,
+      range,
+    });
+    
+    const teamData = response.data.values;
+    const teamIndex = teamData.findIndex(row => row[0] === teamName);
+    if (teamIndex === -1) throw new Error('Team not found');
+    
+    const [currentLocation] = teamData[teamIndex];
+    const newTile = calculateNewTile(currentLocation, direction);
+    
+    if (!newTile) throw new Error('Invalid move');
+    
+    // Update the team's location
+    const newExploredTiles = (teamData[teamIndex][2] || '').split(',').concat(newTile).join(',');
+    await teamSheet.update({
+      spreadsheetId,
+      range: `Teams!B${teamIndex + 2}:D${teamIndex + 2}`,
+      valueInputOption: 'RAW',
+      resource: {
+        values: [[newTile, newExploredTiles]],
+      },
+    });
+    
+    console.log(`Moved team ${teamName} to ${newTile}`);
+  } catch (error) {
+    console.error('Error updating team location:', error);
+  }
+}
+
+// Function to calculate new tile based on direction
+function calculateNewTile(currentTile, direction) {
+  if (!currentTile) return null;
+
+  const [currentRowLetter, currentColumn] = [currentTile.charAt(0), parseInt(currentTile.slice(1))];
+  const currentRowNumber = currentRowLetter.charCodeAt(0) - 64;
+  let newRowNumber = currentRowNumber;
+  let newColumn = currentColumn;
+
+  switch (direction) {
+    case 'up': newRowNumber -= 1; break;
+    case 'down': newRowNumber += 1; break;
+    case 'left': newColumn -= 1; break;
+    case 'right': newColumn += 1; break;
+    case 'up-left': newRowNumber -= 1; newColumn -= 1; break;
+    case 'up-right': newRowNumber -= 1; newColumn += 1; break;
+    case 'down-left': newRowNumber += 1; newColumn -= 1; break;
+    case 'down-right': newRowNumber += 1; newColumn += 1; break;
+  }
+
+  if (newRowNumber < 1 || newColumn < 1) return null;
+
+  const newRowLetter = String.fromCharCode(newRowNumber + 64);
+  return newRowLetter + newColumn;
+}
+
+client.login(DISCORD_TOKEN);
