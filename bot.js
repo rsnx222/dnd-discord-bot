@@ -4,8 +4,15 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+const { Client, GatewayIntentBits } = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
