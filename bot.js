@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Events } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -70,9 +70,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
     }
   } else if (commandName === 'moveteam') {
-    const { options } = interaction;
-    const teamName = options.getString('team');
-    const direction = options.getString('direction');
+    const teamName = interaction.options.getString('team');
+    const direction = interaction.options.getString('direction');
 
     // Check if user has 'admin' role
     const member = interaction.guild.members.cache.get(interaction.user.id);
@@ -82,7 +81,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     try {
-      const teamSheet = sheets.spreadsheets.values.get({
+      const teamSheet = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: 'Teams!A2:D',
       });
