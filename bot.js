@@ -30,12 +30,11 @@ const sheets = google.sheets({ version: 'v4', auth });
 const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
 // Register slash commands
-const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
-
-(async () => {
+client.once('ready', async () => {
   try {
     console.log('Started refreshing application (/) commands.');
 
+    const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
     await rest.put(Routes.applicationCommands(client.user.id), {
       body: [
         {
@@ -55,9 +54,9 @@ const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
     console.log('Successfully reloaded application (/) commands.');
   } catch (error) {
-    console.error(error);
+    console.error('Error registering commands:', error);
   }
-})();
+});
 
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
