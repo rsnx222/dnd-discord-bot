@@ -1,22 +1,24 @@
 require('dotenv').config();
 const { Client, Intents } = require('discord.js');
 const { google } = require('googleapis');
-const { OAuth2 } = google.auth;
+const path = require('path');
+const fs = require('fs');
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID'; // Replace with your spreadsheet ID
-const SHEET_NAME = 'Teams'; // Update as necessary
-const GOOGLE_SHEET_CREDENTIALS_PATH = 'path/to/credentials.json'; // Path to your Google Sheets API credentials
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
-const auth = new OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
+// Decode the Base64-encoded credentials
+const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
+const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString('utf-8');
+const credentials = JSON.parse(credentialsJson);
 
-auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+const auth = new google.auth.GoogleAuth({
+  credentials,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+});
+
 const sheets = google.sheets({ version: 'v4', auth });
 
 client.once('ready', () => {
@@ -39,7 +41,7 @@ client.on('messageCreate', async message => {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_NAME}!A:D`
+        range: `Teams!A:D`
       });
 
       const rows = response.data.values;
