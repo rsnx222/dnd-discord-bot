@@ -463,22 +463,36 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
     return [0, 0]; // Return default coordinates if tile is invalid
   }
 
-  const colMatch = tile.match(/image(\d+)x/);
-  const rowMatch = tile.match(/x(\d+)/);
+  // Check if the tile is in the expected "imageNxM" format
+  const imageFormatMatch = tile.match(/image(\d+)x(\d+)/);
+  if (imageFormatMatch) {
+    const col = parseInt(imageFormatMatch[1], 10); // Extract column number
+    const row = parseInt(imageFormatMatch[2], 10); // Extract row number
 
-  if (!colMatch || !rowMatch) {
-    console.error(`Invalid tile format: ${tile}`);
-    return [0, 0]; // Return default coordinates if tile format is invalid
+    // Convert tile to (x, y) coordinates for the 5x10 grid
+    const x = (col - 1) * tileWidth + tileWidth / 2; // Center of the tile
+    const y = (row - 1) * tileHeight + tileHeight / 2;
+
+    return [x, y];
   }
 
-  const col = parseInt(colMatch[1], 10); // Extract column number
-  const row = parseInt(rowMatch[1], 10); // Extract row number
+  // If the tile is in the "CxR" format (e.g., "C4"), handle this format
+  const gridFormatMatch = tile.match(/([A-Z])(\d+)/);
+  if (gridFormatMatch) {
+    const colLetter = gridFormatMatch[1]; // Extract the column letter (e.g., "C")
+    const row = parseInt(gridFormatMatch[2], 10); // Extract the row number (e.g., 4)
 
-  // Convert tile to (x, y) coordinates for the 5x10 grid
-  const x = (col - 1) * tileWidth + tileWidth / 2; // Center of the tile (adjust for size)
-  const y = (row - 1) * tileHeight + tileHeight / 2;
+    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert the column letter to a number (A=1, B=2, etc.)
 
-  return [x, y];
+    // Convert tile to (x, y) coordinates for the 5x10 grid
+    const x = (col - 1) * tileWidth + tileWidth / 2;
+    const y = (row - 1) * tileHeight + tileHeight / 2;
+
+    return [x, y];
+  }
+
+  console.error(`Invalid tile format: ${tile}`);
+  return [0, 0]; // Return default coordinates if tile format is invalid
 }
 
 
