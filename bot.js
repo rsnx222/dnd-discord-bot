@@ -19,7 +19,7 @@ const guildId = '1242722293700886591';
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
 fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
@@ -50,63 +50,122 @@ const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main
 const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
 const MapTileImageType = '.png';
 
+// Register slash commands including /showmap
+const commands = [
+  {
+    name: 'moveteam',
+    description: 'Move a team by selecting a direction',
+  },
+  {
+    name: 'locations',
+    description: 'Show current team locations',
+  },
+  {
+    name: 'showmap',
+    description: 'Show the current map with team locations',
+  },
+];
+
+(async () => {
+  try {
+    console.log('Started clearing and refreshing guild (/) commands.');
+
+    // Clear all previous guild commands and register new ones
+    await rest.put(
+      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
+      { body: commands }
+    );
+
+    console.log('Successfully reloaded guild (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+})();
+
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
-    // Handle /locations command
-    if (interaction.isCommand() && interaction.commandName === 'locations') {
-      await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction to prevent timeout
+    if (interaction.isCommand()) {
+      // Handle /locations command
+      if (interaction.commandName === 'locations') {
+        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction to prevent timeout
 
-      const range = 'Teams!A2:D'; // Adjust this range as needed
-      try {
-        const response = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range,
-        });
+        const range = 'Teams!A2:D'; // Adjust this range as needed
+        try {
+          const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+          });
 
-        const teamData = response.data.values || [];
-        let locations = 'Current Team Locations:\n';
+          const teamData = response.data.values || [];
+          let locations = 'Current Team Locations:\n';
 
-        teamData.forEach(row => {
-          const [teamName, currentLocation] = row;
-          const emoji = teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
-          locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
-        });
+          teamData.forEach(row => {
+            const [teamName, currentLocation] = row;
+            const emoji = teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
+            locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
+          });
 
-        await interaction.editReply({ content: locations });
-      } catch (error) {
-        console.error('Error fetching data from Google Sheets:', error);
-        await interaction.editReply({ content: 'Failed to fetch data from Google Sheets.' });
+          await interaction.editReply({ content: locations });
+        } catch (error) {
+          console.error('Error fetching data from Google Sheets:', error);
+          await interaction.editReply({ content: 'Failed to fetch data from Google Sheets.' });
+        }
       }
-    }
 
-    // Handle /moveteam command initiation
-    if (interaction.isCommand() && interaction.commandName === 'moveteam') {
-      const teamSelectMenu = new StringSelectMenuBuilder()
-        .setCustomId('select_team')
-        .setPlaceholder('Select a team')
-        .addOptions(
-          { label: 'Pink', value: 'Pink', emoji: '🩷' },
-          { label: 'Green', value: 'Green', emoji: '🟢' },
-          { label: 'Grey', value: 'Grey', emoji: '🔘' },
-          { label: 'Blue', value: 'Blue', emoji: '🔵' },
-          { label: 'Orange', value: 'Orange', emoji: '🟠' },
-          { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
-          { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
-        );
+      // Handle /moveteam command
+      if (interaction.commandName === 'moveteam') {
+        const teamSelectMenu = new StringSelectMenuBuilder()
+          .setCustomId('select_team')
+          .setPlaceholder('Select a team')
+          .addOptions(
+            { label: 'Pink', value: 'Pink', emoji: '🩷' },
+            { label: 'Green', value: 'Green', emoji: '🟢' },
+            { label: 'Grey', value: 'Grey', emoji: '🔘' },
+            { label: 'Blue', value: 'Blue', emoji: '🔵' },
+            { label: 'Orange', value: 'Orange', emoji: '🟠' },
+            { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
+            { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
+          );
 
-      const row = new ActionRowBuilder().addComponents(teamSelectMenu);
+        const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
-      await interaction.reply({
-        content: 'Select a team to move:',
-        components: [row],
-        ephemeral: true,
-      });
+        await interaction.reply({
+          content: 'Select a team to move:',
+          components: [row],
+          ephemeral: true,
+        });
+      }
+
+      // Handle /showmap command
+      if (interaction.commandName === 'showmap') {
+        try {
+          const range = 'Teams!A2:C';
+          const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+          });
+
+          const teamData = response.data.values.map(row => ({
+            teamName: row[0],
+            currentLocation: row[1],
+            exploredTiles: row[2].split(',')
+          }));
+
+          // Generate the map image
+          const imagePath = await generateMapImage(teamData);
+
+          // Send the map image in the Discord channel
+          await interaction.reply({ files: [imagePath] });
+        } catch (error) {
+          console.error('Error generating map:', error);
+          await interaction.reply({ content: 'Failed to generate the map.', ephemeral: true });
+        }
+      }
     }
 
     // Handle team selection
     if (interaction.isStringSelectMenu() && interaction.customId === 'select_team') {
-
       const selectedTeam = interaction.values[0]; // Get selected team
 
       const directionButtons = new ActionRowBuilder().addComponents(
@@ -139,45 +198,44 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton() && ['north', 'south', 'west', 'east'].includes(interaction.customId)) {
       const selectedDirection = interaction.customId;
       const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the selected team from the message
-    
+
       try {
         await interaction.deferReply({ ephemeral: true }); // Defer the reply early
-        
+
         // Fetch the Teams sheet data, including Columns A (Team), B (Current Location), and C (Explored Tiles)
         const teamSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
           range: 'Teams!A2:C', // Update range to include Columns A, B, and C
         });
 
-    
         const teamData = teamSheet.data.values || [];
-        
+
         // Find the row where the team name matches, and extract the current location from column B
         const team = teamData.find(row => row[0] === teamName);
         if (!team) {
           return await interaction.editReply({ content: `Team ${teamName} not found.` });
         }
-    
+
         const currentLocation = team[1]; // Fetch current location from column B
         console.log(`Current Location for ${teamName}: ${currentLocation}`);  // Log the current location
-    
+
         // Calculate the new tile based on the current location and selected direction
         const newTile = calculateNewTile(currentLocation, selectedDirection);
-    
+
         if (!isValidTile(newTile)) {
           return await interaction.editReply({ content: `Invalid tile: ${newTile}.` });
         }
-    
+
         // Check if the new tile meets the hidden requirements
         const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
           range: 'HiddenTileRequirements!A2:B',
         });
-    
+
         if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
           return await interaction.editReply({ content: `Cannot move to ${newTile} due to hidden requirements.` });
         }
-    
+
         // Update the team's location in the Teams sheet
         await sheets.spreadsheets.values.update({
           spreadsheetId,
@@ -187,10 +245,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             values: [[newTile]],
           },
         });
-    
+
         // Update explored tiles if necessary
         await updateExploredTiles(teamSheet, teamName, newTile);
-    
+
         await interaction.editReply({ content: `Team ${teamName} moved to ${newTile}.` });
       } catch (error) {
         console.error('Error updating team location:', error);
@@ -198,53 +256,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
 
-
   } catch (error) {
     console.error('An error occurred in the interaction handler:', error);
   }
 });
-
-const commands = [
-  {
-    name: 'moveteam',
-    description: 'Move a team by selecting a direction',
-  },
-  {
-    name: 'locations',
-    description: 'Show current team locations',
-  },
-];
-
-
-(async () => {
-  try {
-    console.log('Started clearing and refreshing guild (/) commands.');
-
-    // Clear all previous guild commands
-    await rest.put(
-      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
-      { body: [] }
-    );
-
-    // Register new commands
-    await rest.put(
-      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
-      { body: commands }
-    );
-
-    console.log('Successfully reloaded guild (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
-})();
-
-
-// Login the bot
-client.once(Events.ClientReady, () => {
-  console.log('Bot is online!');
-});
-
-client.login(DISCORD_TOKEN);
 
 // Utility functions for movement logic
 function calculateNewTile(currentTile, direction) {
@@ -302,8 +317,6 @@ function calculateNewTile(currentTile, direction) {
   return `${newCol}${newRow}`; // Return the new tile (e.g., 'C7')
 }
 
-
-
 function isValidTile(tile) {
   return tile !== null;
 }
@@ -319,7 +332,7 @@ function canMoveToTile(tile, hiddenRequirements) {
 
 async function updateExploredTiles(teamSheet, teamName, newTile) {
   const teamData = teamSheet.data.values || [];
-  
+
   // Log the entire data for the team to see if we're fetching the right range
   console.log(`Full team data fetched from Google Sheets:`, teamData);
 
@@ -329,11 +342,6 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
   let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
 
   console.log(`Fetched explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log the fetched data
-  
-  // If the value is empty, check if it's truly empty in the Google Sheet
-  if (!currentExploredTiles) {
-    console.log(`Warning: No explored tiles data found for ${teamName}. Is Column C empty in the Google Sheet?`);
-  }
 
   // Clean up the data to remove any unwanted commas or spaces
   const cleanedExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
@@ -424,32 +432,9 @@ function getCoordinatesFromTile(tile) {
   return [x, y];
 }
 
-// In your interaction handler for showing the map:
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isCommand() && interaction.commandName === 'showmap') {
-    try {
-      // Fetch team data from Google Sheets
-      const range = 'Teams!A2:C';
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
-
-      const teamData = response.data.values.map(row => ({
-        teamName: row[0],
-        currentLocation: row[1],
-        exploredTiles: row[2].split(',')
-      }));
-
-      // Generate the map image
-      const imagePath = await generateMapImage(teamData);
-
-      // Send the map image in the Discord channel
-      await interaction.reply({ files: [imagePath] });
-    } catch (error) {
-      console.error('Error generating map:', error);
-      await interaction.reply({ content: 'Failed to generate the map.', ephemeral: true });
-    }
-  }
+// Login the bot
+client.once(Events.ClientReady, () => {
+  console.log('Bot is online!');
 });
 
+client.login(DISCORD_TOKEN);
