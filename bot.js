@@ -179,7 +179,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             showAllTeams = false; // Set flag to show only the selected team's explored tiles
           }
 
-          // Generate the map image for either all teams or the selected team
+          // Generate the map image for either all teams (unexplored) or the selected team
           const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
 
           await interaction.editReply({ files: [imagePath] });
@@ -188,6 +188,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           await interaction.editReply({ content: 'Failed to generate the map.' });
         }
       }
+
 
 
     }
@@ -415,14 +416,6 @@ async function generateMapImage(teamData, showAllTeams = true) {
   const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
   const ctx = canvas.getContext('2d');
 
-  // If showing all teams, collect explored tiles from all teams
-  const exploredTilesSet = new Set();
-  if (showAllTeams) {
-    teamData.forEach(team => {
-      team.exploredTiles.forEach(tile => exploredTilesSet.add(tile)); // Add each explored tile to the Set
-    });
-  }
-
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
     for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
@@ -431,16 +424,16 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
       let tileImageURL;
 
-      // If showing all teams, check the global set of explored tiles
-      if (showAllTeams && exploredTilesSet.has(tile)) {
-        tileImageURL = `${MapTileExploredSourceURL}${imageName}`; // Show explored tile if it's in the global set
+      // For the generic map, only show unexplored tiles
+      if (showAllTeams) {
+        tileImageURL = `${MapTileSourceURL}${imageName}`; // Always show unexplored tile for the generic map
       } 
-      // For individual team view, only check the explored tiles for that team
-      else if (!showAllTeams && teamData.some(team => team.exploredTiles.includes(tile))) {
+      // For individual team view, show explored tiles if applicable
+      else if (teamData.some(team => team.exploredTiles.includes(tile))) {
         tileImageURL = `${MapTileExploredSourceURL}${imageName}`; // Show explored tile for individual team
       } 
       else {
-        tileImageURL = `${MapTileSourceURL}${imageName}`; // Show unexplored tile
+        tileImageURL = `${MapTileSourceURL}${imageName}`; // Show unexplored tile if it's not explored
       }
 
       console.log(`Loading image from URL: ${tileImageURL}`);
@@ -474,6 +467,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
   return './map.png';
 }
+
 
 
 
