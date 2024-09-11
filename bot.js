@@ -390,24 +390,24 @@ async function generateMapImage(teamData) {
   const canvas = createCanvas(800, 400); // Adjust size based on map grid
   const ctx = canvas.getContext('2d');
 
-  // Loop through all tiles and draw the appropriate image
-  for (let row = 3; row <= 12; row++) { // Assuming 10 rows
-    for (let col = 1; col <= 5; col++) { // Assuming 5 columns
-      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column to letter (A-F)
+  // Loop through the valid map grid (5 columns, 10 rows)
+  for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
+    for (let col = 1; col <= 5; col++) { // Column letters from A to E
+      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column index to letter (A-E)
 
-      // Check if tile is explored for any team (we assume this is tracked in explored tiles)
+      // Check if the tile is explored for any team (assuming this is tracked in explored tiles)
       const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
 
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
-        ? `${MapTileExploredSourceURL}row-${row - 2}-column-${col - 1}${MapTileImageType}`
-        : `${MapTileSourceURL}${String.fromCharCode(64 + col)}${row}${MapTileImageType}`;
+        ? `${MapTileExploredSourceURL}${tile}${MapTileImageType}` // Explored tile URL
+        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
       try {
         const tileImage = await loadImage(tileImageURL);
-        ctx.drawImage(tileImage, (col - 1) * 160, (row - 3) * 80, 160, 80); // Adjust sizes for grid
+        ctx.drawImage(tileImage, (col - 1) * 160, (row - 1) * 80, 160, 80); // Adjust sizes for grid
       } catch (error) {
         console.error(`Error loading image from URL: ${tileImageURL}`, error);
       }
@@ -437,12 +437,13 @@ function getCoordinatesFromTile(tile) {
   const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
   const row = parseInt(tile.slice(1), 10);
 
-  // Example: Convert tile (B7) to (x, y) coordinates
-  const x = (col - 1) * 160 + 80; // Center of the tile
-  const y = (row - 3) * 80 + 40;
+  // Convert tile to (x, y) coordinates for the 5x10 grid
+  const x = (col - 1) * 160 + 80; // Center of the tile (adjust for size)
+  const y = (row - 1) * 80 + 40;
 
   return [x, y];
 }
+
 
 // Login the bot
 client.once(Events.ClientReady, () => {
