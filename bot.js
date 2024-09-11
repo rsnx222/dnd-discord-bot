@@ -84,14 +84,6 @@ const commands = [
   },
 ];
 
-// Register commands on bot start
-client.once(Events.ClientReady, async () => {
-  console.log('Bot is online!');
-  
-  // Register commands using commandManager
-  await commandManager.registerCommands(DISCORD_CLIENT_ID, guildId, commands);
-});
-
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
@@ -496,8 +488,14 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
 }
 
 // Login the bot
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
   console.log('Bot is online!');
+
+  // Clear all old commands first
+  await commandManager.deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId);
+
+  // Register the current commands again
+  await commandManager.registerCommands(DISCORD_CLIENT_ID, guildId, commands);
 });
 
 client.login(DISCORD_TOKEN);

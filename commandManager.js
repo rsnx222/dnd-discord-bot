@@ -32,19 +32,24 @@ async function fetchCommands(DISCORD_CLIENT_ID, guildId) {
   }
 }
 
-async function deleteCommand(DISCORD_CLIENT_ID, guildId, commandId) {
+async function deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId) {
   try {
-    await rest.delete(
-      Routes.applicationGuildCommand(DISCORD_CLIENT_ID, guildId, commandId)
-    );
-    console.log(`Deleted command with ID: ${commandId}`);
+    console.log('Deleting all guild commands...');
+    const commands = await fetchCommands(DISCORD_CLIENT_ID, guildId);
+
+    for (const command of commands) {
+      await rest.delete(
+        Routes.applicationGuildCommand(DISCORD_CLIENT_ID, guildId, command.id)
+      );
+      console.log(`Deleted command: ${command.name}`);
+    }
   } catch (error) {
-    console.error('Error deleting command:', error);
+    console.error('Error deleting all commands:', error);
   }
 }
 
 module.exports = {
   registerCommands,
   fetchCommands,
-  deleteCommand,
+  deleteAllGuildCommands,
 };
