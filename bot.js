@@ -95,7 +95,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // Handle team selection
-    if (interaction.isSelectMenu() && interaction.customId === 'select_team') {
+    if (interaction.isStringSelectMenu() && interaction.customId === 'select_team') {
+
       const selectedTeam = interaction.values[0]; // Get selected team
 
       const directionButtons = new ActionRowBuilder().addComponents(
