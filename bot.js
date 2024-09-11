@@ -13,6 +13,7 @@ const client = new Client({
   ],
 });
 
+const guildId = '1242722293700886591';
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
@@ -180,6 +181,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
     console.error('An error occurred in the interaction handler:', error);
   }
 });
+
+
+(async () => {
+  try {
+    console.log('Started refreshing guild (/) commands.');
+
+    await rest.put(
+      Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
+      { body: commands }
+    );
+
+    console.log('Successfully reloaded guild (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+})();
+
 
 // Login the bot
 client.once(Events.ClientReady, () => {
