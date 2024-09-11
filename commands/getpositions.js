@@ -19,6 +19,9 @@ module.exports = {
         range,
       });
 
+      // Log the full response to help diagnose the issue
+      console.log('Google Sheets Response:', response);
+
       // Check if the response contains data and values
       if (!response.data || !response.data.values || response.data.values.length === 0) {
         throw new Error('No data returned from Google Sheets.');
