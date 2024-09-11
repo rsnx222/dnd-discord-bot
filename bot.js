@@ -311,10 +311,14 @@ function canMoveToTile(tile, hiddenRequirements) {
 
 async function updateExploredTiles(teamSheet, teamName, newTile) {
   const teamData = teamSheet.data.values || [];
+  
+  // Log the entire data for the team to see if we're fetching the right range
+  console.log(`Full team data fetched from Google Sheets:`, teamData);
+
   const teamRowIndex = teamData.findIndex(row => row[0] === teamName) + 2; // Find the row of the team
 
   // Fetch existing explored tiles (Column C)
-  const currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
+  let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
 
   console.log(`Fetched explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log the fetched data
   
@@ -357,4 +361,3 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 
   console.log(`Successfully updated explored tiles for ${teamName}: '${updatedExploredTiles}'`);
 }
-
