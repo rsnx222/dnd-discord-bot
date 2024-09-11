@@ -54,7 +54,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   // Handle select menu interaction (e.g., for team selection in moveteam)
-  else if (interaction.isSelectMenu()) {
+  else if (interaction.isStringSelectMenu()) {
     const command = client.commands.get('moveteam'); // Ensure the interaction is for moveteam
 
     if (command && typeof command.handleSelectMenu === 'function') {
