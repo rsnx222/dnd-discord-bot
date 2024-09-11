@@ -313,7 +313,8 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
   const teamData = teamSheet.data.values || [];
   const teamRowIndex = teamData.findIndex(row => row[0] === teamName) + 2; // Find the row of the team
 
-  const currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; // Fetch existing explored tiles (Column C)
+  // Fetch existing explored tiles (Column C)
+  const currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
 
   // Check if the new tile is already in the explored tiles
   const exploredTilesArray = currentExploredTiles ? currentExploredTiles.split(',') : []; // Split the existing tiles by comma, or start with an empty array
@@ -325,7 +326,7 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 
   // Append the new tile to the existing tiles
   exploredTilesArray.push(newTile); // Add the new tile
-  const updatedExploredTiles = exploredTilesArray.join(','); // Join the tiles back into a string without leading comma
+  const updatedExploredTiles = exploredTilesArray.join(','); // Join the tiles back into a string
 
   // Update the "Explored Tiles" column (C)
   await sheets.spreadsheets.values.update({
