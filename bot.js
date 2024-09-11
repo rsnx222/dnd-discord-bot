@@ -233,13 +233,14 @@ function calculateNewTile(currentTile, direction) {
   console.log(`Current Tile: ${currentTile}`);  // Log the current tile
   console.log(`Direction: ${direction}`);  // Log the direction
 
+  // Ensure currentTile is valid and has a column letter and a row number
   if (!currentTile || currentTile.length < 2) {
     console.error('Invalid current tile format');
-    return null;  // Ensure valid tile format
+    return null;
   }
-  
-  const col = currentTile.charAt(0); // Letter (Column)
-  const row = parseInt(currentTile.slice(1)); // Number (Row)
+
+  const col = currentTile.charAt(0); // Extract letter (column)
+  const row = parseInt(currentTile.slice(1)); // Extract number (row)
 
   console.log(`Parsed Column: ${col}, Parsed Row: ${row}`);  // Log parsed column and row
 
@@ -248,11 +249,12 @@ function calculateNewTile(currentTile, direction) {
     return null; // Ensure row is a number
   }
 
-  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0); // Convert column letter to index (A = 0, B = 1, etc.)
+  // Convert column letter to index (A = 0, B = 1, C = 2, etc.)
+  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0);
   let newColIndex = colIndex;
   let newRow = row;
 
-  // Calculate new tile based on direction
+  // Calculate new position based on the direction
   switch (direction) {
     case 'north': newRow -= 1; break;
     case 'south': newRow += 1; break;
@@ -260,27 +262,26 @@ function calculateNewTile(currentTile, direction) {
     case 'east': newColIndex += 1; break;
     default: 
       console.error('Invalid direction');
-      return null; // Invalid direction
+      return null;
   }
 
-  console.log(`New Column Index: ${newColIndex}, New Row: ${newRow}`);  // Log the new column index and row
-
-  // Ensure the new column is within bounds (A to E = col index 0 to 4)
-  if (newColIndex < 0 || newColIndex > 4) {
+  // Ensure the new column is within bounds (B to F = col index 1 to 5)
+  if (newColIndex < 1 || newColIndex > 5) {
     console.error('New column index out of bounds');
     return null;
   }
 
-  // Ensure the new row is within bounds (1 to 5)
-  if (newRow < 1 || newRow > 5) {
+  // Ensure the new row is within bounds (3 to 12)
+  if (newRow < 3 || newRow > 12) {
     console.error('New row out of bounds');
     return null;
   }
 
-  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex); // Convert back to column letter
+  // Convert new column index back to a letter
+  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex);
 
   console.log(`New Tile: ${newCol}${newRow}`);  // Log the final new tile
-  return `${newCol}${newRow}`; // Return the new tile
+  return `${newCol}${newRow}`; // Return the new tile (e.g., 'C7')
 }
 
 
