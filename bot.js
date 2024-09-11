@@ -15,6 +15,7 @@ const client = new Client({
 });
 
 const guildId = '1242722293700886591';
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
@@ -202,7 +203,7 @@ const commands = [
     console.log('Started refreshing guild (/) commands.');
 
     await rest.put(
-      Routes.applicationGuildCommands(process.env.DISCORD_TOKEN, guildId),
+      Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
       { body: commands }
     );
 
