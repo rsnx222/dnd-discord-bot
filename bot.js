@@ -1,13 +1,10 @@
 const { Client, GatewayIntentBits, Events } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-const settings = require('./settings');
-const commandManager = require('./commandManager');
-const { generateMapImage } = require('./mapGenerator');
-const googleSheetsHelper = require('./googleSheetsHelper');  // For Google Sheets integration
-const teamManager = require('./teamManager');  // For team-related logic
-const movementLogic = require('./movementLogic');  // For movement logic
+const commandManager = require('./commandManager');  // Manages loading and executing commands
+const logger = require('./logger');  // Log management
+const settings = require('./settings');  // Settings and configuration
+require('dotenv').config();
 
+// Initialize Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -16,29 +13,13 @@ const client = new Client({
   ],
 });
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: settings.credentialsPath,
-  scopes: 'https://www.googleapis.com/auth/spreadsheets',
-});
-const sheets = google.sheets({ version: 'v4', auth });
-
-// Read all command files from `/commands` directory
-client.commands = new Map();
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
-// Dynamically load command files
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
-}
-
-// Register commands
+// On client ready
 client.once(Events.ClientReady, async () => {
-  console.log('Bot is online!');
+  logger.log('Bot is online!');
 
-  const commands = client.commands.map(cmd => cmd.data); // Map command data for registration
+  // Clear old commands and register the current ones from the /commands directory
   await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-  await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId, commands);
+  await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
 });
 
 // Handle interactions
@@ -47,14 +28,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   const command = client.commands.get(interaction.commandName);
 
-  if (!command) return;
+  if (!command) {
+    logger.error(`No command found for: ${interaction.commandName}`);
+    return;
+  }
 
   try {
-    await command.execute(interaction, sheets, settings); // Pass necessary dependencies
+    await command.execute(interaction);
   } catch (error) {
-    console.error(`Error executing ${interaction.commandName}:`, error);
-    await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    logger.error(`Error executing command ${interaction.commandName}:`, error);
+    await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
   }
 });
 
+// Login the bot
 client.login(settings.DISCORD_TOKEN);
