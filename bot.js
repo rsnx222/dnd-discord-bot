@@ -200,10 +200,17 @@ const commands = [
 
 (async () => {
   try {
-    console.log('Started refreshing guild (/) commands.');
+    console.log('Started clearing and refreshing guild (/) commands.');
 
+    // Clear all previous guild commands
     await rest.put(
-      Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
+      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
+      { body: [] }
+    );
+
+    // Register new commands
+    await rest.put(
+      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
       { body: commands }
     );
 
