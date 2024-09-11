@@ -50,7 +50,7 @@ const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main
 const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
 const MapTileImageType = '.png';
 
-// Register slash commands
+// Register slash commands including /showmap
 const commands = [
   {
     name: 'moveteam',
@@ -138,10 +138,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // Handle /showmap command
-      if (interaction.isCommand() && interaction.commandName === 'showmap') {
+      if (interaction.commandName === 'showmap') {
         console.log("Received /showmap command");
+
+        // Defer reply to keep interaction alive
         await interaction.deferReply({ ephemeral: true });
-  
+
         try {
           console.log("Fetching team data from Google Sheets...");
           const range = 'Teams!A2:C';
@@ -149,22 +151,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
             spreadsheetId,
             range,
           });
-  
+
           console.log("Processing team data...");
           const teamData = response.data.values.map(row => ({
             teamName: row[0],
             currentLocation: row[1],
             exploredTiles: row[2] ? row[2].split(',') : []
           }));
-  
+
           console.log("Generating map image...");
           const imagePath = await generateMapImage(teamData);
-  
+
           console.log("Sending map image...");
           await interaction.editReply({ files: [imagePath] });
-  
         } catch (error) {
-          console.error("Error during map generation or data fetching:", error);
+          console.error("Error generating map or fetching data:", error);
           await interaction.editReply({ content: 'Failed to generate the map.' });
         }
       }
@@ -402,9 +403,14 @@ async function generateMapImage(teamData) {
         ? `${MapTileExploredSourceURL}row-${row - 2}-column-${col - 1}${MapTileImageType}`
         : `${MapTileSourceURL}${String.fromCharCode(64 + col)}${row}${MapTileImageType}`;
 
-      // Load and draw the image onto the canvas
-      const tileImage = await loadImage(tileImageURL);
-      ctx.drawImage(tileImage, (col - 1) * 160, (row - 3) * 80, 160, 80); // Adjust sizes for grid
+      console.log(`Loading image from URL: ${tileImageURL}`);
+
+      try {
+        const tileImage = await loadImage(tileImageURL);
+        ctx.drawImage(tileImage, (col - 1) * 160, (row - 3) * 80, 160, 80); // Adjust sizes for grid
+      } catch (error) {
+        console.error(`Error loading image from URL: ${tileImageURL}`, error);
+      }
     }
   }
 
