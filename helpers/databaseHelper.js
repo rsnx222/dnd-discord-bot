@@ -59,21 +59,23 @@ async function updateExploredTiles(teamName, newTiles) {
   }
 }
 
-// Function to fetch data about a specific tile
+// Fetch tile data from the database
 async function getTileData(tileName) {
   try {
     const connection = await getDBConnection();
     const [rows] = await connection.execute('SELECT * FROM tiles WHERE tile_name = ?', [tileName]);
 
     if (rows.length === 0) {
-      throw new Error(`No data found for tile ${tileName}`);
+      // Return null or a default object if no data is found
+      return null;
     }
 
-    const tile = rows[0];
+    const row = rows[0];
     return {
-      tileName: tile.tile_name,
-      event: tile.event,
-      description: tile.description
+      tileName: row.tile_name,
+      event: row.event,
+      description: row.description,
+      eventType: row.event_type
     };
   } catch (error) {
     console.error('Error fetching tile data from database:', error);

@@ -64,7 +64,7 @@ module.exports = {
   },
 
   // Handle direction button press
-  async handleButton(interaction) {
+  async function handleButton(interaction) {
     const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
 
@@ -87,20 +87,23 @@ module.exports = {
         return;
       }
 
+      // Fetch the new tile data from the database
+      const tileData = await databaseHelper.getTileData(newTile);
+
+      if (!tileData) {
+        await interaction.update({
+          content: `No data found for tile ${newTile}. Please try again later.`,
+          components: [],
+          ephemeral: true,
+        });
+        return;
+      }
+
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
-      // Fetch the new tile data for storyline generation
-      const tileData = await databaseHelper.getTileData(newTile);
-      const storyline = generateStoryline(tileData);
-
-      // Get the team’s Discord channel
-      const channelId = await getTeamChannel(teamName);
-      const channel = await interaction.client.channels.fetch(channelId);
-      channel.send(storyline);
-
       await interaction.update({
-        content: `Team ${teamName} moved ${direction} to ${newTile}.`,
+        content: `Team ${teamName} moved ${direction} to ${newTile}. ${tileData.description}`,
         components: [],
         ephemeral: true,
       });
@@ -112,5 +115,6 @@ module.exports = {
         ephemeral: true,
       });
     }
-  },
+  }
+
 };
