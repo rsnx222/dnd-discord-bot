@@ -1,20 +1,18 @@
 // moveteam.js
 
-const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const settings = require('../settings');
-const googleSheetsHelper = require('../googleSheetsHelper');  // For interacting with Google Sheets
-const teamManager = require('../teamManager');  // If needed for team-related logic
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const teamManager = require('../teamManager');  // Handles team-related logic
 
 module.exports = {
-  data: {
-    name: 'moveteam',
-    description: 'Move a team by selecting a direction',
-  },
-  async execute(interaction, settings) {
+  data: new SlashCommandBuilder()
+    .setName('moveteam')
+    .setDescription('Move a team by selecting a direction'),
+    
+  async execute(interaction) {
     const teamSelectMenu = new StringSelectMenuBuilder()
       .setCustomId('select_team')
       .setPlaceholder('Select a team')
-      .addOptions(getTeamOptions(settings.teamEmojis)); // You can pass settings here
+      .addOptions(teamManager.getTeamOptions()); // Get team options from teamManager
 
     const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 

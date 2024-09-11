@@ -1,20 +1,19 @@
 // locations.js
 
-const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
+const googleSheetsHelper = require('../googleSheetsHelper');
 const settings = require('../settings');
-const googleSheetsHelper = require('../googleSheetsHelper');  // For interacting with Google Sheets
-const teamManager = require('../teamManager');  // If needed for team-related logic
 
 module.exports = {
-  data: {
-    name: 'getpositions',
-    description: 'Show positions of all teams',
-  },
-  async execute(interaction, sheets, settings) {
+  data: new SlashCommandBuilder()
+    .setName('getpositions')
+    .setDescription('Show positions of all teams'),
+    
+  async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
     try {
       const range = 'Teams!A2:D'; // Adjust this range as needed
-      const response = await sheets.spreadsheets.values.get({
+      const response = await googleSheetsHelper.spreadsheets.values.get({
         spreadsheetId: settings.spreadsheetId,
         range,
       });

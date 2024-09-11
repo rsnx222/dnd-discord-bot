@@ -1,7 +1,9 @@
+// showmap.js
+
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../mapGenerator');
-const settings = require('../settings');
 const googleSheetsHelper = require('../googleSheetsHelper');
+const settings = require('../settings');
 const teamManager = require('../teamManager');
 
 module.exports = {
