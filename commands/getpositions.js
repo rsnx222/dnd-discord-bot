@@ -11,12 +11,18 @@ module.exports = {
     
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
+
     try {
       const range = 'Teams!A2:D'; // Adjust this range as needed
       const response = await googleSheetsHelper.spreadsheets.values.get({
         spreadsheetId: settings.spreadsheetId,
         range,
       });
+
+      // Check if the response contains data and values
+      if (!response.data || !response.data.values || response.data.values.length === 0) {
+        throw new Error('No data returned from Google Sheets.');
+      }
 
       const teamData = response.data.values || [];
       let locations = 'Current Team Locations:\n';
