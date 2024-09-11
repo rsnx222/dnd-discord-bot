@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, Events, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
+const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
@@ -17,6 +18,7 @@ const client = new Client({
 const guildId = '1242722293700886591';
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
@@ -42,6 +44,11 @@ const teamEmojis = {
   Yellow: '🟡',
   Cyan: '🩵',
 };
+
+// Base URLs for tile images
+const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/';
+const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
+const MapTileImageType = '.png';
 
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -362,3 +369,87 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 
   console.log(`Successfully updated explored tiles for ${teamName}: '${updatedExploredTiles}'`);
 }
+
+// Fetch team data and explored tiles
+async function generateMapImage(teamData) {
+  const canvas = createCanvas(800, 400); // Adjust size based on map grid
+  const ctx = canvas.getContext('2d');
+
+  // Loop through all tiles and draw the appropriate image
+  for (let row = 3; row <= 12; row++) { // Assuming 10 rows
+    for (let col = 1; col <= 5; col++) { // Assuming 5 columns
+      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column to letter (A-F)
+
+      // Check if tile is explored for any team (we assume this is tracked in explored tiles)
+      const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
+
+      // Set tile image source based on exploration status
+      const tileImageURL = tileExplored
+        ? `${MapTileExploredSourceURL}row-${row - 2}-column-${col - 1}${MapTileImageType}`
+        : `${MapTileSourceURL}${String.fromCharCode(64 + col)}${row}${MapTileImageType}`;
+
+      // Load and draw the image onto the canvas
+      const tileImage = await loadImage(tileImageURL);
+      ctx.drawImage(tileImage, (col - 1) * 160, (row - 3) * 80, 160, 80); // Adjust sizes for grid
+    }
+  }
+
+  // Draw team positions
+  teamData.forEach(team => {
+    const { currentLocation, teamName } = team;
+    const [x, y] = getCoordinatesFromTile(currentLocation);
+
+    // Draw circle or icon for the team
+    ctx.fillStyle = 'red'; // You can set team-specific colors here
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Save canvas as image
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync('./map.png', buffer);
+
+  return './map.png';
+}
+
+function getCoordinatesFromTile(tile) {
+  const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+  const row = parseInt(tile.slice(1), 10);
+
+  // Example: Convert tile (B7) to (x, y) coordinates
+  const x = (col - 1) * 160 + 80; // Center of the tile
+  const y = (row - 3) * 80 + 40;
+
+  return [x, y];
+}
+
+// In your interaction handler for showing the map:
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isCommand() && interaction.commandName === 'showmap') {
+    try {
+      // Fetch team data from Google Sheets
+      const range = 'Teams!A2:C';
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range,
+      });
+
+      const teamData = response.data.values.map(row => ({
+        teamName: row[0],
+        currentLocation: row[1],
+        exploredTiles: row[2].split(',')
+      }));
+
+      // Generate the map image
+      const imagePath = await generateMapImage(teamData);
+
+      // Send the map image in the Discord channel
+      await interaction.reply({ files: [imagePath] });
+    } catch (error) {
+      console.error('Error generating map:', error);
+      await interaction.reply({ content: 'Failed to generate the map.', ephemeral: true });
+    }
+  }
+});
+
