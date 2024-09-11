@@ -64,7 +64,7 @@ module.exports = {
   },
 
   // Handle direction button press
-  async function handleButton(interaction) {
+  async handleButton(interaction) {
     const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
 
