@@ -425,24 +425,25 @@ async function generateMapImage(teamData) {
   const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
   const ctx = canvas.getContext('2d');
 
-  // Get explored tiles for the selected team (if any)
-  const exploredTilesSet = new Set(); // To store all explored tiles from all teams
+  // Get explored tiles for the selected team(s)
+  const exploredTilesSet = new Set(); // Store all explored tiles from the selected team(s)
   teamData.forEach(team => {
-    team.exploredTiles.forEach(tile => exploredTilesSet.add(tile));
+    team.exploredTiles.forEach(tile => exploredTilesSet.add(tile)); // Add each explored tile to the Set
   });
 
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
     for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
-      const tile = `image${col}x${row}`; // Format 'image2x3.png'
+      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column and row to the tile format, e.g., B3
+      const imageName = `image${col}x${row}${MapTileImageType}`; // Image name based on format 'image2x3.png'
 
       // Check if the current tile is explored
       const tileExplored = exploredTilesSet.has(tile);
 
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
-        ? `${MapTileExploredSourceURL}${tile}${MapTileImageType}` // Explored tile URL format: 'explored/image2x3.png'
-        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL format: 'image2x3.png'
+        ? `${MapTileExploredSourceURL}${imageName}` // Explored tile URL format: 'explored/image2x3.png'
+        : `${MapTileSourceURL}${imageName}`; // Unexplored tile URL format: 'image2x3.png'
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -475,6 +476,7 @@ async function generateMapImage(teamData) {
 
   return './map.png';
 }
+
 
 
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
