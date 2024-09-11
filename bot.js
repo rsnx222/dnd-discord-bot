@@ -386,6 +386,7 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 }
 
 // Fetch team data and explored tiles
+
 async function generateMapImage(teamData) {
   const canvas = createCanvas(800, 400); // Adjust size based on map grid
   const ctx = canvas.getContext('2d');
@@ -393,15 +394,17 @@ async function generateMapImage(teamData) {
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
     for (let col = 1; col <= 5; col++) { // Column letters from A to E
-      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column index to letter (A-E)
+      const tileLetter = String.fromCharCode(64 + col); // Convert column index to letter (A-E)
+      const tileNumber = row; // Row number (1-10)
+      const tile = `${tileLetter}${tileNumber}`; // Tile in the format A2
 
-      // Check if the tile is explored for any team (assuming this is tracked in explored tiles)
+      // Check if the tile is explored for any team
       const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
 
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
-        ? `${MapTileExploredSourceURL}${tile}${MapTileImageType}` // Explored tile URL
-        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL
+        ? `${MapTileExploredSourceURL}row-${row}-column-${col}${MapTileImageType}` // Explored tile URL format: row-9-column-5.png
+        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL format: A2.png
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -434,8 +437,8 @@ async function generateMapImage(teamData) {
 }
 
 function getCoordinatesFromTile(tile) {
-  const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-  const row = parseInt(tile.slice(1), 10);
+  const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert letter to column index
+  const row = parseInt(tile.slice(1), 10); // Convert row part to number
 
   // Convert tile to (x, y) coordinates for the 5x10 grid
   const x = (col - 1) * 160 + 80; // Center of the tile (adjust for size)
