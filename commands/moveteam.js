@@ -1,8 +1,8 @@
 // moveteam.js
 
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const databaseHelper = require('../databaseHelper'); // Use the new database helper
-const { calculateNewTile } = require('../movementLogic'); // Import the movement logic
+const databaseHelper = require('../helpers/databaseHelper'); // Use the new database helper
+const { calculateNewTile } = require('../core/movementLogic'); // Import the movement logic
 
 module.exports = {
   data: new SlashCommandBuilder()

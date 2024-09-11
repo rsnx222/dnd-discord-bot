@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
-const commandManager = require('./commandManager');  // Manages loading and executing commands
-const logger = require('./logger');  // Log management
-const settings = require('./settings');  // Settings and configuration
+const commandManager = require('./helpers/commandManager');  // Manages loading and executing commands
+const logger = require('./helpers/logger');  // Log management
+const settings = require('./config/settings');  // Settings and configuration
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();

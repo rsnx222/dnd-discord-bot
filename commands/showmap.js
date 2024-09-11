@@ -1,9 +1,9 @@
 // showmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
-const { generateMapImage } = require('../mapGenerator');
-const databaseHelper = require('../databaseHelper');
-const teamManager = require('../teamManager');
+const { generateMapImage } = require('../core/mapGenerator');
+const databaseHelper = require('../helpers/databaseHelper');
+const teamManager = require('../helpers/teamManager');
 
 module.exports = {
   data: new SlashCommandBuilder()

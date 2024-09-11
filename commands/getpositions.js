@@ -1,8 +1,8 @@
 // getpositions.js
 
 const { SlashCommandBuilder } = require('discord.js');
-const databaseHelper = require('../databaseHelper');
-const settings = require('../settings');
+const databaseHelper = require('../helpers/databaseHelper');
+const settings = require('../config/settings');
 
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-const settings = require('./settings');
+const settings = require('../config/settings');
 
 // Setup MySQL connection using environment variables
 async function getDBConnection() {

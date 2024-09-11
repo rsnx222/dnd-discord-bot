@@ -2,7 +2,7 @@
 
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
-const settings = require('./settings');
+const settings = require('../config/settings');
 
 async function generateMapImage(teamData, showAllTeams = true) {
   const tileWidth = 192; // Half of 384px
