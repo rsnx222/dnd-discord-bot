@@ -1,3 +1,5 @@
+// databaseHelper.js
+
 const mysql = require('mysql2/promise');
 const settings = require('../config/settings');
 
@@ -20,7 +22,8 @@ async function getTeamData() {
     return rows.map(row => ({
       teamName: row.team_name,
       currentLocation: row.location,
-      exploredTiles: row.explored_tiles ? row.explored_tiles.split(',') : []
+      exploredTiles: row.explored_tiles ? row.explored_tiles.split(',') : [],
+      channelId: row.channel_id  // Ensure your table has this field
     }));
   } catch (error) {
     console.error('Error fetching team data from database:', error);
@@ -56,9 +59,32 @@ async function updateExploredTiles(teamName, newTiles) {
   }
 }
 
+// Function to fetch data about a specific tile
+async function getTileData(tileName) {
+  try {
+    const connection = await getDBConnection();
+    const [rows] = await connection.execute('SELECT * FROM tiles WHERE tile_name = ?', [tileName]);
+
+    if (rows.length === 0) {
+      throw new Error(`No data found for tile ${tileName}`);
+    }
+
+    const tile = rows[0];
+    return {
+      tileName: tile.tile_name,
+      event: tile.event,
+      description: tile.description
+    };
+  } catch (error) {
+    console.error('Error fetching tile data from database:', error);
+    throw error;
+  }
+}
+
 // Export functions for use in bot.js
 module.exports = {
   getTeamData,
   updateTeamLocation,
-  updateExploredTiles
+  updateExploredTiles,
+  getTileData
 };

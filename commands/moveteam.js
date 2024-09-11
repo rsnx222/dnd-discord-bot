@@ -3,6 +3,8 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper'); // Use the new database helper
 const { calculateNewTile } = require('../core/movementLogic'); // Import the movement logic
+const { generateStoryline } = require('../core/storylineManager'); // Import the storyline generator
+const { getTeamChannel } = require('../helpers/teamManager'); // Function to get the team's channel
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -87,6 +89,15 @@ module.exports = {
 
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
+
+      // Fetch the new tile data for storyline generation
+      const tileData = await databaseHelper.getTileData(newTile);
+      const storyline = generateStoryline(tileData);
+
+      // Get the team’s Discord channel
+      const channelId = await getTeamChannel(teamName);
+      const channel = await interaction.client.channels.fetch(channelId);
+      channel.send(storyline);
 
       await interaction.update({
         content: `Team ${teamName} moved ${direction} to ${newTile}.`,
