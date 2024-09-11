@@ -1,14 +1,14 @@
 // logger.js
 
-function logError(message, error) {
-  console.error(`${message}:`, error);
-}
-
-function logInfo(message) {
-  console.log(message);
-}
-
 module.exports = {
-  logError,
-  logInfo,
+  log: function (message) {
+    console.log(`[LOG] ${message}`);
+  },
+  
+  error: function (message, error = null) {
+    console.error(`[ERROR] ${message}`);
+    if (error) {
+      console.error(error);
+    }
+  }
 };
