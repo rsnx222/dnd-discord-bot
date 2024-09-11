@@ -316,20 +316,29 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
   // Fetch existing explored tiles (Column C)
   let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
 
-  // Remove any leading or trailing commas/spaces just in case
+  console.log(`Current explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log current tiles for debugging
+
+  // Trim any leading/trailing commas/spaces
   currentExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
 
-  // Check if the new tile is already in the explored tiles
-  const exploredTilesArray = currentExploredTiles ? currentExploredTiles.split(',') : []; // Split the existing tiles by comma, or start with an empty array
+  console.log(`Cleaned explored tiles: '${currentExploredTiles}'`); // Log cleaned tiles
 
+  // Split into an array of tiles if not empty, otherwise initialize an empty array
+  const exploredTilesArray = currentExploredTiles ? currentExploredTiles.split(',') : []; 
+
+  console.log(`Explored tiles array: [${exploredTilesArray.join(', ')}]`); // Log the array for debugging
+
+  // Check if the new tile is already explored
   if (exploredTilesArray.includes(newTile)) {
-    console.log(`${newTile} is already explored for ${teamName}.`);
+    console.log(`Tile ${newTile} is already in the explored list for ${teamName}.`);
     return; // No need to update if the tile is already explored
   }
 
-  // Append the new tile to the existing tiles
-  exploredTilesArray.push(newTile); // Add the new tile
-  const updatedExploredTiles = exploredTilesArray.join(','); // Join the tiles back into a string
+  // Append the new tile
+  exploredTilesArray.push(newTile); 
+  const updatedExploredTiles = exploredTilesArray.join(','); // Rebuild the comma-separated string
+
+  console.log(`Updated explored tiles for ${teamName}: '${updatedExploredTiles}'`); // Log the new tiles
 
   // Update the "Explored Tiles" column (C)
   await sheets.spreadsheets.values.update({
@@ -341,5 +350,5 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
     },
   });
 
-  console.log(`Explored tiles for ${teamName} updated: ${updatedExploredTiles}`);
+  console.log(`Successfully updated explored tiles for ${teamName}: '${updatedExploredTiles}'`);
 }
