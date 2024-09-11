@@ -10,10 +10,10 @@ async function registerCommands(DISCORD_CLIENT_ID, guildId) {
     console.log('Started clearing and refreshing guild (/) commands.');
 
     // Load commands from the /commands directory
-    const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
+    const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 
     const commands = commandFiles.map(file => {
-      const command = require(`./commands/${file}`);
+      const command = require(`../commands/${file}`);
       return command.data.toJSON(); // Ensure commands are properly formatted for registration
     });
 
