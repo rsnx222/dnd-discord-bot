@@ -97,7 +97,6 @@ module.exports = {
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
       // Generate and send the map image
-      const teamData = await databaseHelper.getTeamData(); // Ensure up-to-date team data
       const mapImagePath = await generateMapImage(teamData, false); // Pass false to show only the moving team's location
 
       // Fetch the team's channel ID
