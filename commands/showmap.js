@@ -3,7 +3,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../mapGenerator');
 const googleSheetsHelper = require('../googleSheetsHelper');
-const settings = require('../settings');
 const teamManager = require('../teamManager');
 
 module.exports = {
@@ -21,17 +20,8 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      const range = 'Teams!A2:C';
-      const response = await googleSheetsHelper.spreadsheets.values.get({
-        spreadsheetId: settings.spreadsheetId,
-        range,
-      });
-
-      const teamData = response.data.values.map(row => ({
-        teamName: row[0],
-        currentLocation: row[1],
-        exploredTiles: row[2] ? row[2].split(',') : [],
-      }));
+      // Use the helper method to get team data
+      const teamData = await googleSheetsHelper.getTeamData();
 
       let filteredTeamData = teamData;
       let showAllTeams = true;
