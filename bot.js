@@ -425,13 +425,19 @@ async function generateMapImage(teamData) {
   const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
   const ctx = canvas.getContext('2d');
 
+  // Get explored tiles for the selected team (if any)
+  const exploredTilesSet = new Set(); // To store all explored tiles from all teams
+  teamData.forEach(team => {
+    team.exploredTiles.forEach(tile => exploredTilesSet.add(tile));
+  });
+
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
     for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
       const tile = `image${col}x${row}`; // Format 'image2x3.png'
 
-      // Check if the tile is explored for any team
-      const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
+      // Check if the current tile is explored
+      const tileExplored = exploredTilesSet.has(tile);
 
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
@@ -469,6 +475,7 @@ async function generateMapImage(teamData) {
 
   return './map.png';
 }
+
 
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   if (!tile) {
