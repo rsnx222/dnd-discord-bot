@@ -14,41 +14,34 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
   // Set the line width for borders to be as thin as possible
   ctx.lineWidth = 0.5;  // Set the thinnest possible border
-
-  // Set the border color
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Light, barely visible border
 
   // Loop through the valid map grid (5 columns, 10 rows)
-  for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
-    for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
-      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column and row to the tile format, e.g., B3
-      const imageName = `image${col}x${row}${settings.MapTileImageType}`; // Image name based on format 'image2x3.png'
+  for (let row = 1; row <= 10; row++) { 
+    for (let col = 1; col <= 5; col++) { 
+      const tile = `${String.fromCharCode(64 + col)}${row}`; 
+      const imageName = `image${col}x${row}${settings.MapTileImageType}`;
 
       let tileImageURL;
 
-      // For the generic map, only show unexplored tiles
       if (showAllTeams) {
-        tileImageURL = `${settings.MapTileSourceURL}${imageName}`; // Always show unexplored tile for the generic map
+        tileImageURL = `${settings.MapTileSourceURL}${imageName}`;
       } else if (teamData.some(team => team.exploredTiles.includes(tile))) {
-        // For individual team view, show explored tiles if applicable
-        tileImageURL = `${settings.MapTileExploredSourceURL}${imageName}`; // Show explored tile for individual team
+        tileImageURL = `${settings.MapTileExploredSourceURL}${imageName}`;
       } else {
-        tileImageURL = `${settings.MapTileSourceURL}${imageName}`; // Show unexplored tile if it's not explored
+        tileImageURL = `${settings.MapTileSourceURL}${imageName}`;
       }
 
       try {
         const tileImage = await loadImage(tileImageURL);
-        ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight); // Draw the tile
-
-        // Draw the border around the tile
-        ctx.strokeRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);  // Thin border for each tile
+        ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
+        ctx.strokeRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
       } catch (error) {
         console.error(`Error loading image from URL: ${tileImageURL}`, error);
       }
     }
   }
 
-  // Group teams by their current location to handle multiple teams on the same tile
   const teamsGroupedByLocation = teamData.reduce((acc, team) => {
     const { currentLocation } = team;
     if (!acc[currentLocation]) {
@@ -58,41 +51,45 @@ async function generateMapImage(teamData, showAllTeams = true) {
     return acc;
   }, {});
 
-  // Draw team positions with an offset if multiple teams are on the same tile
   for (const [location, teamsOnSameTile] of Object.entries(teamsGroupedByLocation)) {
     const [baseX, baseY] = getCoordinatesFromTile(location, tileWidth, tileHeight);
 
-    // Calculate icon spacing offsets
-    const iconSpacing = 10;  // The distance between icons
-    const iconRadius = 16;   // Icon size (width/height = 32px)
-    
+    const iconSpacing = 10;
+    const iconRadius = 16;
+
     const totalTeams = teamsOnSameTile.length;
-    const angleStep = (2 * Math.PI) / totalTeams;  // Angle step in radians
+    const angleStep = (2 * Math.PI) / totalTeams;
 
     for (let i = 0; i < totalTeams; i++) {
       const team = teamsOnSameTile[i];
-      const angle = i * angleStep;  // Calculate the angle for the current team
+      const angle = i * angleStep;
 
-      // Calculate offset positions using polar coordinates
       const offsetX = Math.cos(angle) * iconSpacing;
       const offsetY = Math.sin(angle) * iconSpacing;
 
       const iconX = baseX - iconRadius / 2 + offsetX;
       const iconY = baseY - iconRadius / 2 + offsetY;
 
-      // Load team icon based on team name (lowercase) or use default
-      const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png` || `${settings.teamIconBaseURL}Black.png`;
+      const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png`;
 
       try {
-        const iconImage = await loadImage(teamIconURL); // Use await to load the image asynchronously
-        ctx.drawImage(iconImage, iconX, iconY, 32, 32); // Draw team icon at the calculated location
+        const iconImage = await loadImage(teamIconURL);
+        ctx.drawImage(iconImage, iconX, iconY, 32, 32);
       } catch (error) {
-        console.error(`Error loading team icon: ${teamIconURL}`, error);
+        console.error(`Error loading team icon: ${teamIconURL}, using default icon instead`);
+
+        // Use default icon if specific team icon is not found
+        const defaultIconURL = `${settings.teamIconBaseURL}Black.png`;
+        try {
+          const defaultIcon = await loadImage(defaultIconURL);
+          ctx.drawImage(defaultIcon, iconX, iconY, 32, 32);
+        } catch (defaultIconError) {
+          console.error(`Error loading default icon: ${defaultIconURL}`, defaultIconError);
+        }
       }
     }
   }
 
-  // Save canvas as image
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync('./map.png', buffer);
 
@@ -102,17 +99,16 @@ async function generateMapImage(teamData, showAllTeams = true) {
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   if (!tile) {
     console.error('Tile is null or undefined.');
-    return [0, 0]; // Return default coordinates if tile is invalid
+    return [0, 0];
   }
 
   const gridFormatMatch = tile.match(/([A-Z])(\d+)/);
   if (gridFormatMatch) {
-    const colLetter = gridFormatMatch[1]; // Extract the column letter (e.g., "C")
-    const row = parseInt(gridFormatMatch[2], 10); // Extract the row number (e.g., 4)
+    const colLetter = gridFormatMatch[1];
+    const row = parseInt(gridFormatMatch[2], 10);
 
-    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert the column letter to a number (A=1, B=2, etc.)
+    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
 
-    // Convert tile to (x, y) coordinates for the 5x10 grid
     const x = (col - 1) * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
 
@@ -120,7 +116,7 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   }
 
   console.error(`Invalid tile format: ${tile}`);
-  return [0, 0]; // Return default coordinates if tile format is invalid
+  return [0, 0];
 }
 
 module.exports = {
