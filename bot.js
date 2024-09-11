@@ -50,7 +50,16 @@ const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main
 const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
 const MapTileImageType = '.png';
 
-// Register slash commands including /showmap
+// Create a function to generate team options dynamically from teamEmojis
+function getTeamOptions() {
+  return Object.keys(teamEmojis).map(team => ({
+    label: team,
+    value: team,
+    emoji: teamEmojis[team],
+  }));
+}
+
+// Register slash commands
 const commands = [
   {
     name: 'moveteam',
@@ -63,8 +72,18 @@ const commands = [
   {
     name: 'showmap',
     description: 'Show the current map with team locations',
+    options: [
+      {
+        name: 'team',
+        description: 'Optional: Select a team to view only their explored/unexplored tiles',
+        type: 3, // String type
+        required: false,
+        choices: getTeamOptions(), // Dynamically populate choices
+      },
+    ],
   },
 ];
+
 
 (async () => {
   try {
@@ -118,15 +137,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const teamSelectMenu = new StringSelectMenuBuilder()
           .setCustomId('select_team')
           .setPlaceholder('Select a team')
-          .addOptions(
-            { label: 'Pink', value: 'Pink', emoji: '🩷' },
-            { label: 'Green', value: 'Green', emoji: '🟢' },
-            { label: 'Grey', value: 'Grey', emoji: '🔘' },
-            { label: 'Blue', value: 'Blue', emoji: '🔵' },
-            { label: 'Orange', value: 'Orange', emoji: '🟠' },
-            { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
-            { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
-          );
+          .addOptions(getTeamOptions()); // Dynamically populate options
 
         const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
@@ -139,36 +150,41 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // Handle /showmap command
       if (interaction.commandName === 'showmap') {
-        console.log("Received /showmap command");
+        const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
 
         // Defer reply to keep interaction alive
         await interaction.deferReply({ ephemeral: true });
 
         try {
-          console.log("Fetching team data from Google Sheets...");
           const range = 'Teams!A2:C';
           const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range,
           });
 
-          console.log("Processing team data...");
           const teamData = response.data.values.map(row => ({
             teamName: row[0],
             currentLocation: row[1],
             exploredTiles: row[2] ? row[2].split(',') : []
           }));
 
-          console.log("Generating map image...");
-          const imagePath = await generateMapImage(teamData);
+          let filteredTeamData = teamData;
 
-          console.log("Sending map image...");
+          if (selectedTeam) {
+            // If a team is selected, filter the data to only include that team
+            filteredTeamData = teamData.filter(team => team.teamName === selectedTeam);
+          }
+
+          // Generate the map image for either all teams or the selected team
+          const imagePath = await generateMapImage(filteredTeamData);
+
           await interaction.editReply({ files: [imagePath] });
         } catch (error) {
           console.error("Error generating map or fetching data:", error);
           await interaction.editReply({ content: 'Failed to generate the map.' });
         }
       }
+
     }
 
     // Handle team selection
@@ -386,7 +402,6 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 }
 
 // Fetch team data and explored tiles
-
 async function generateMapImage(teamData) {
   const tileWidth = 192; // Half of 384px
   const tileHeight = 47.5; // Half of 95px
@@ -408,7 +423,7 @@ async function generateMapImage(teamData) {
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
         ? `${MapTileExploredSourceURL}row-${row}-column-${col}${MapTileImageType}` // Explored tile URL format: row-9-column-5.png
-        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Corrected unexplored tile URL format: A2.png
+        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Correct unexplored tile URL format: A2.png
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -421,13 +436,15 @@ async function generateMapImage(teamData) {
     }
   }
 
-  // Draw team positions
+  // Draw team positions with team-specific colors
   teamData.forEach(team => {
     const { currentLocation, teamName } = team;
     const [x, y] = getCoordinatesFromTile(currentLocation, tileWidth, tileHeight);
 
+    // Set the fill color dynamically based on the team name (lowercase)
+    ctx.fillStyle = teamName.toLowerCase(); // Set fill color to team name in lowercase (e.g., 'orange')
+
     // Draw circle or icon for the team
-    ctx.fillStyle = 'red'; // You can set team-specific colors here
     ctx.beginPath();
     ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fill();
@@ -450,7 +467,6 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
 
   return [x, y];
 }
-
 
 // Login the bot
 client.once(Events.ClientReady, () => {
