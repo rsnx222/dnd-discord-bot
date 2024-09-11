@@ -66,7 +66,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.reply({ content: locations, ephemeral: true });
     } catch (error) {
       console.error('Error fetching data from Google Sheets:', error);
-      await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
+      try {
+        await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
+      } catch (err) {
+        console.error('Failed to send reply:', err);
+      }
     }
   } else if (commandName === 'moveteam') {
     const teamName = interaction.options.getString('team');
@@ -124,7 +128,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.reply({ content: `Team ${teamName} moved to ${newTile}.`, ephemeral: true });
     } catch (error) {
       console.error('Error updating team location:', error);
-      await interaction.reply({ content: 'Failed to update team location.', ephemeral: true });
+      try {
+        await interaction.reply({ content: 'Failed to update team location.', ephemeral: true });
+      } catch (err) {
+        console.error('Failed to send reply:', err);
+      }
     }
   }
 });
@@ -152,6 +160,7 @@ function calculateNewTile(currentTile, direction) {
     case 'up-right': newRowNumber -= 1; newColumnNumber += 1; break;
     case 'down-left': newRowNumber += 1; newColumnNumber -= 1; break;
     case 'down-right': newRowNumber += 1; newColumnNumber += 1; break;
+    default: return null;
   }
 
   if (newRowNumber < 1 || newColumnNumber < 1 || newRowNumber > 5 || newColumnNumber > 10) return null;
