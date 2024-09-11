@@ -3,6 +3,7 @@ const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
+const { REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({
@@ -15,6 +16,7 @@ const client = new Client({
 
 const guildId = '1242722293700886591';
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
 fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
