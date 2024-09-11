@@ -15,7 +15,7 @@ async function getTeamData() {
   try {
     const range = 'Teams!A2:C';
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      settings.spreadsheetId,
       range,
     });
     return response.data.values.map(row => ({
