@@ -103,6 +103,7 @@ async function getTileData(tileName) {
 // Export functions for use in bot.js
 module.exports = {
   getTeamData,
+  getTeamChannelId,  // Add this function to the export
   updateTeamLocation,
   updateExploredTiles,
   getTileData
