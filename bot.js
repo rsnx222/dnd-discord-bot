@@ -151,53 +151,43 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       // Handle /showmap command
-if (interaction.commandName === 'showmap') {
-  const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
+      if (interaction.commandName === 'showmap') {
+        const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
 
-  // Defer reply to keep interaction alive
-  await interaction.deferReply({ ephemeral: true });
+        // Defer reply to keep interaction alive
+        await interaction.deferReply({ ephemeral: true });
 
-  try {
-    const range = 'Teams!A2:C';
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
+        try {
+          const range = 'Teams!A2:C';
+          const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+          });
 
-    const teamData = response.data.values.map(row => ({
-      teamName: row[0],
-      currentLocation: row[1],
-      exploredTiles: row[2] ? row[2].split(',') : []
-    }));
+          const teamData = response.data.values.map(row => ({
+            teamName: row[0],
+            currentLocation: row[1],
+            exploredTiles: row[2] ? row[2].split(',') : []
+          }));
 
-    let filteredTeamData = teamData;
+          let filteredTeamData = teamData;
+          let showAllTeams = true;
 
-    if (selectedTeam) {
-      // If a team is selected, filter the data to only include that team
-      filteredTeamData = teamData.filter(team => team.teamName === selectedTeam);
-      
-      // Ensure exploredTiles for the selected team are loaded correctly
-      if (filteredTeamData.length === 1) {
-        const teamExploredTiles = filteredTeamData[0].exploredTiles;
+          if (selectedTeam) {
+            // If a team is selected, filter the data to only include that team
+            filteredTeamData = teamData.filter(team => team.teamName === selectedTeam);
+            showAllTeams = false; // Set flag to show only the selected team's explored tiles
+          }
 
-        // If there are explored tiles, check their format and load them
-        if (teamExploredTiles.length > 0) {
-          console.log(`Explored tiles for ${selectedTeam}: ${teamExploredTiles}`);
-        } else {
-          console.log(`No explored tiles found for ${selectedTeam}`);
+          // Generate the map image for either all teams or the selected team
+          const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
+
+          await interaction.editReply({ files: [imagePath] });
+        } catch (error) {
+          console.error("Error generating map or fetching data:", error);
+          await interaction.editReply({ content: 'Failed to generate the map.' });
         }
       }
-    }
-
-    // Generate the map image for either all teams or the selected team
-    const imagePath = await generateMapImage(filteredTeamData);
-
-    await interaction.editReply({ files: [imagePath] });
-  } catch (error) {
-    console.error("Error generating map or fetching data:", error);
-    await interaction.editReply({ content: 'Failed to generate the map.' });
-  }
-}
 
 
     }
@@ -417,7 +407,7 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 }
 
 // Fetch team data and explored tiles
-async function generateMapImage(teamData) {
+async function generateMapImage(teamData, showAllTeams = true) {
   const tileWidth = 192; // Half of 384px
   const tileHeight = 47.5; // Half of 95px
 
@@ -425,11 +415,13 @@ async function generateMapImage(teamData) {
   const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
   const ctx = canvas.getContext('2d');
 
-  // Get explored tiles for the selected team(s)
-  const exploredTilesSet = new Set(); // Store all explored tiles from the selected team(s)
-  teamData.forEach(team => {
-    team.exploredTiles.forEach(tile => exploredTilesSet.add(tile)); // Add each explored tile to the Set
-  });
+  // If showing all teams, collect explored tiles from all teams
+  const exploredTilesSet = new Set();
+  if (showAllTeams) {
+    teamData.forEach(team => {
+      team.exploredTiles.forEach(tile => exploredTilesSet.add(tile)); // Add each explored tile to the Set
+    });
+  }
 
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
@@ -437,13 +429,19 @@ async function generateMapImage(teamData) {
       const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column and row to the tile format, e.g., B3
       const imageName = `image${col}x${row}${MapTileImageType}`; // Image name based on format 'image2x3.png'
 
-      // Check if the current tile is explored
-      const tileExplored = exploredTilesSet.has(tile);
+      let tileImageURL;
 
-      // Set tile image source based on exploration status
-      const tileImageURL = tileExplored
-        ? `${MapTileExploredSourceURL}${imageName}` // Explored tile URL format: 'explored/image2x3.png'
-        : `${MapTileSourceURL}${imageName}`; // Unexplored tile URL format: 'image2x3.png'
+      // If showing all teams, check the global set of explored tiles
+      if (showAllTeams && exploredTilesSet.has(tile)) {
+        tileImageURL = `${MapTileExploredSourceURL}${imageName}`; // Show explored tile if it's in the global set
+      } 
+      // For individual team view, only check the explored tiles for that team
+      else if (!showAllTeams && teamData.some(team => team.exploredTiles.includes(tile))) {
+        tileImageURL = `${MapTileExploredSourceURL}${imageName}`; // Show explored tile for individual team
+      } 
+      else {
+        tileImageURL = `${MapTileSourceURL}${imageName}`; // Show unexplored tile
+      }
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -476,6 +474,7 @@ async function generateMapImage(teamData) {
 
   return './map.png';
 }
+
 
 
 
