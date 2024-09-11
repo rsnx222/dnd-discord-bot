@@ -1,6 +1,6 @@
 // moveteam.js
 
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const googleSheetsHelper = require('../googleSheetsHelper');
 
 module.exports = {
@@ -29,6 +29,7 @@ module.exports = {
         components: [row],
         ephemeral: true,
       });
+
     } catch (error) {
       console.error('Error generating team select menu:', error);
       await interaction.reply({
@@ -37,4 +38,49 @@ module.exports = {
       });
     }
   },
+
+  // Handle team selection from the select menu
+  async handleSelectMenu(interaction) {
+    if (interaction.customId === 'select_team') {
+      const selectedTeam = interaction.values[0]; // Get the selected team
+
+      // Generate buttons for movement directions
+      const directionButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+      );
+
+      await interaction.update({
+        content: `You selected ${selectedTeam}. Now choose the direction:`,
+        components: [directionButtons],
+        ephemeral: true,
+      });
+    }
+  },
+
+  // Handle direction button press
+  async handleButton(interaction) {
+    const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
+    const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
+
+    try {
+      // Update the team's location based on the direction
+      await googleSheetsHelper.updateTeamLocation(teamName, direction);
+
+      await interaction.update({
+        content: `Team ${teamName} moved ${direction}.`,
+        components: [],
+        ephemeral: true,
+      });
+    } catch (error) {
+      console.error(`Error moving team ${teamName}:`, error);
+      await interaction.update({
+        content: 'Failed to move the team. Please try again later.',
+        components: [],
+        ephemeral: true,
+      });
+    }
+  }
 };
