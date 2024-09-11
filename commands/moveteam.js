@@ -89,14 +89,8 @@ module.exports = {
       // Fetch the new tile data from the database
       const tileData = await databaseHelper.getTileData(newTile);
 
-      if (!tileData) {
-        await interaction.update({
-          content: `No data found for tile ${newTile}. Please try again later.`,
-          components: [],
-          ephemeral: true,
-        });
-        return;
-      }
+      // Generate the event message
+      const eventMessage = tileData ? generateEventMessage(tileData) : 'You set up camp and rest up.';
 
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
@@ -117,7 +111,6 @@ module.exports = {
       const channel = await interaction.client.channels.fetch(channelId);
 
       if (channel) {
-        const eventMessage = generateEventMessage(tileData); // Generate the event message based on tile data
         await channel.send(eventMessage);
       }
 
@@ -126,6 +119,7 @@ module.exports = {
         components: [],
         ephemeral: true,
       });
+
     } catch (error) {
       console.error(`Error moving team ${teamName}:`, error);
       await interaction.update({
