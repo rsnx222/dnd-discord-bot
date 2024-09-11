@@ -18,8 +18,8 @@ module.exports = {
         .setCustomId('select_team')
         .setPlaceholder('Select a team')
         .addOptions(teamData.map(team => ({
-          label: team.team_name,  // Assuming your DB stores team name in 'team_name'
-          value: team.team_name,
+          label: team.teamName,  // Using 'teamName' as returned from the database
+          value: team.teamName,  // Same 'teamName' for the value
         }))); 
 
       const row = new ActionRowBuilder().addComponents(teamSelectMenu);
