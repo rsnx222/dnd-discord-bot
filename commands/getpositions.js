@@ -24,9 +24,8 @@ module.exports = {
       let locations = 'Current Team Locations:\n';
 
       teamData.forEach(row => {
-        console.log(row)
-        const teamName = row.team_name; // 'team_name' matches your database structure
-        const currentLocation = row.location; // 'location' matches your database structure
+        const teamName = row.teamName;
+        const currentLocation = row.currentLocation;
 
         // Check for undefined values in the row
         if (!teamName || !currentLocation) {
