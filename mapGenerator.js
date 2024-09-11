@@ -15,7 +15,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
   // Set the line width for borders to be as thin as possible
   ctx.lineWidth = 0.5;  // Set the thinnest possible border
 
-  // Set the border color (if you want to change it)
+  // Set the border color
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Light, barely visible border
 
   // Loop through the valid map grid (5 columns, 10 rows)
@@ -36,8 +36,6 @@ async function generateMapImage(teamData, showAllTeams = true) {
         tileImageURL = `${settings.MapTileSourceURL}${imageName}`; // Show unexplored tile if it's not explored
       }
 
-      console.log(`Loading image from URL: ${tileImageURL}`);
-
       try {
         const tileImage = await loadImage(tileImageURL);
         ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight); // Draw the tile
@@ -50,19 +48,47 @@ async function generateMapImage(teamData, showAllTeams = true) {
     }
   }
 
-  // Draw team positions with team-specific colors
-  for (const team of teamData) {
-    const { currentLocation, teamName } = team;
-    const [x, y] = getCoordinatesFromTile(currentLocation, tileWidth, tileHeight);
+  // Group teams by their current location to handle multiple teams on the same tile
+  const teamsGroupedByLocation = teamData.reduce((acc, team) => {
+    const { currentLocation } = team;
+    if (!acc[currentLocation]) {
+      acc[currentLocation] = [];
+    }
+    acc[currentLocation].push(team);
+    return acc;
+  }, {});
 
-    // Load team icon based on team name (lowercase) or use default
-    const teamIconURL = `${settings.teamIconBaseURL}${teamName}.png` || `${settings.teamIconBaseURL}Black.png`;
+  // Draw team positions with an offset if multiple teams are on the same tile
+  for (const [location, teamsOnSameTile] of Object.entries(teamsGroupedByLocation)) {
+    const [baseX, baseY] = getCoordinatesFromTile(location, tileWidth, tileHeight);
 
-    try {
-      const iconImage = await loadImage(teamIconURL); // Use await to load the image asynchronously
-      ctx.drawImage(iconImage, x - 16, y - 16, 32, 32); // Draw team icon at current location
-    } catch (error) {
-      console.error(`Error loading team icon: ${teamIconURL}`, error);
+    // Calculate icon spacing offsets
+    const iconSpacing = 10;  // The distance between icons
+    const iconRadius = 16;   // Icon size (width/height = 32px)
+    
+    const totalTeams = teamsOnSameTile.length;
+    const angleStep = (2 * Math.PI) / totalTeams;  // Angle step in radians
+
+    for (let i = 0; i < totalTeams; i++) {
+      const team = teamsOnSameTile[i];
+      const angle = i * angleStep;  // Calculate the angle for the current team
+
+      // Calculate offset positions using polar coordinates
+      const offsetX = Math.cos(angle) * iconSpacing;
+      const offsetY = Math.sin(angle) * iconSpacing;
+
+      const iconX = baseX - iconRadius / 2 + offsetX;
+      const iconY = baseY - iconRadius / 2 + offsetY;
+
+      // Load team icon based on team name (lowercase) or use default
+      const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png` || `${settings.teamIconBaseURL}Black.png`;
+
+      try {
+        const iconImage = await loadImage(teamIconURL); // Use await to load the image asynchronously
+        ctx.drawImage(iconImage, iconX, iconY, 32, 32); // Draw team icon at the calculated location
+      } catch (error) {
+        console.error(`Error loading team icon: ${teamIconURL}`, error);
+      }
     }
   }
 
