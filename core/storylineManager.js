@@ -1,17 +1,27 @@
 // storylineManager.js
 
-const storylineData = require('../config/events.js'); // Assuming you store event details in this file
+// Generate a message for the event based on tile data
+function generateEventMessage(tileData) {
+  if (!tileData || !tileData.eventType) {
+    return 'You have arrived at a new tile, but there is no information available about it.';
+  }
 
-function generateStoryline(tileData) {
-  const templates = {
-    "Puzzle": "As the fog clears, a puzzle emerges: [description]. Your team better think quick to solve the puzzle...",
-    "Battle": "You pass into the new area, and face a challenge. [description]. Prepare for a fight!",
-  };
-
-  const template = templates[tileData.event] || "You have encountered something new: [description].";
-  return template.replace("[description]", tileData.description);
+  switch (tileData.eventType.toLowerCase()) {
+    case 'quest':
+      return `You have discovered a quest on this tile. ${tileData.description}`;
+    case 'challenge':
+      return `Prepare yourself! This tile contains a challenge: ${tileData.description}`;
+    case 'boss':
+      return `A fearsome boss awaits on this tile. ${tileData.description}`;
+    case 'dungeon':
+      return `You have entered a dungeon. Beware of what lies ahead: ${tileData.description}`;
+    case 'transport link':
+      return `This tile has a transport link. ${tileData.description}`;
+    default:
+      return `You have encountered something on this tile: ${tileData.description}`;
+  }
 }
 
 module.exports = {
-  generateStoryline
+  generateEventMessage,
 };

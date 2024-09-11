@@ -31,6 +31,23 @@ async function getTeamData() {
   }
 }
 
+// Fetch team channel ID from the database
+async function getTeamChannelId(teamName) {
+  try {
+    const connection = await getDBConnection();
+    const [rows] = await connection.execute('SELECT channel_id FROM teams WHERE team_name = ?', [teamName]);
+
+    if (rows.length === 0) {
+      return null; // No channel ID found for the team
+    }
+
+    return rows[0].channel_id;
+  } catch (error) {
+    console.error('Error fetching team channel ID from database:', error);
+    throw error;
+  }
+}
+
 // Function to update the team's current location in the database
 async function updateTeamLocation(teamName, newLocation) {
   try {

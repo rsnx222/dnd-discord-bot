@@ -3,8 +3,7 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper'); // Use the new database helper
 const { calculateNewTile } = require('../core/movementLogic'); // Import the movement logic
-const { generateStoryline } = require('../core/storylineManager'); // Import the storyline generator
-const { getTeamChannel } = require('../helpers/teamManager'); // Function to get the team's channel
+const { generateEventMessage } = require('../core/storylineManager'); // Import the message generator
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -102,8 +101,28 @@ module.exports = {
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
+      // Fetch the team's channel ID
+      const channelId = await databaseHelper.getTeamChannelId(teamName);
+
+      if (!channelId) {
+        await interaction.update({
+          content: 'Failed to find the team’s channel. Please contact the event organizer.',
+          components: [],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      // Send the message to the team’s channel
+      const channel = await interaction.client.channels.fetch(channelId);
+
+      if (channel) {
+        const eventMessage = generateEventMessage(tileData); // Generate the event message based on tile data
+        await channel.send(eventMessage);
+      }
+
       await interaction.update({
-        content: `Team ${teamName} moved ${direction} to ${newTile}. ${tileData.description}`,
+        content: `Team ${teamName} moved ${direction} to ${newTile}.`,
         components: [],
         ephemeral: true,
       });
@@ -116,5 +135,4 @@ module.exports = {
       });
     }
   }
-
 };

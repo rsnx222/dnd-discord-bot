@@ -18,13 +18,6 @@ function getTeamEmoji(teamName) {
   return teamEmojis[teamName] || '🔘';
 }
 
-// Get the team's Discord channel ID
-async function getTeamChannel(teamName) {
-  const teamData = await databaseHelper.getTeamData();
-  const team = teamData.find(t => t.teamName === teamName);
-  return team ? team.channelId : null; // Return the channel ID or null if not found
-}
-
 // Export utility functions
 module.exports = {
   getTeamOptions,
