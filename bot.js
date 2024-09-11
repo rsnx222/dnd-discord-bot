@@ -388,7 +388,11 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 // Fetch team data and explored tiles
 
 async function generateMapImage(teamData) {
-  const canvas = createCanvas(800, 400); // Adjust size based on map grid
+  const tileWidth = 192; // Half of 384px
+  const tileHeight = 47.5; // Half of 95px
+
+  // Adjust canvas size based on the new tile dimensions (5 columns, 10 rows)
+  const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
   const ctx = canvas.getContext('2d');
 
   // Loop through the valid map grid (5 columns, 10 rows)
@@ -410,7 +414,7 @@ async function generateMapImage(teamData) {
 
       try {
         const tileImage = await loadImage(tileImageURL);
-        ctx.drawImage(tileImage, (col - 1) * 160, (row - 1) * 80, 160, 80); // Adjust sizes for grid
+        ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight); // Adjust sizes for grid
       } catch (error) {
         console.error(`Error loading image from URL: ${tileImageURL}`, error);
       }
@@ -420,7 +424,7 @@ async function generateMapImage(teamData) {
   // Draw team positions
   teamData.forEach(team => {
     const { currentLocation, teamName } = team;
-    const [x, y] = getCoordinatesFromTile(currentLocation);
+    const [x, y] = getCoordinatesFromTile(currentLocation, tileWidth, tileHeight);
 
     // Draw circle or icon for the team
     ctx.fillStyle = 'red'; // You can set team-specific colors here
@@ -436,13 +440,13 @@ async function generateMapImage(teamData) {
   return './map.png';
 }
 
-function getCoordinatesFromTile(tile) {
+function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert letter to column index
   const row = parseInt(tile.slice(1), 10); // Convert row part to number
 
   // Convert tile to (x, y) coordinates for the 5x10 grid
-  const x = (row - 1) * 160 + 80; // Adjust for correct unexplored tile positioning
-  const y = (col - 1) * 80 + 40;
+  const x = (row - 1) * tileWidth + tileWidth / 2; // Center of the tile (adjust for size)
+  const y = (col - 1) * tileHeight + tileHeight / 2;
 
   return [x, y];
 }
