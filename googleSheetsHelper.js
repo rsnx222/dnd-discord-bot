@@ -14,8 +14,9 @@ const sheets = google.sheets({ version: 'v4', auth });
 async function getTeamData() {
   try {
     const range = 'Teams!A2:C';
+    const spreadsheetId = settings.spreadsheetId;
     const response = await sheets.spreadsheets.values.get({
-      settings.spreadsheetId,
+      spreadsheetId,
       range,
     });
     return response.data.values.map(row => ({
