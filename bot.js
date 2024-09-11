@@ -132,55 +132,62 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton() && ['north', 'south', 'west', 'east'].includes(interaction.customId)) {
       const selectedDirection = interaction.customId;
       const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the selected team from the message
-
+    
       try {
+        // Fetch the Teams sheet data
         const teamSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: 'Teams!A2:D',
+          range: 'Teams!A2:B', // Update range to include only Team and Current Location columns
         });
-
+    
         const teamData = teamSheet.data.values || [];
+        
+        // Find the row where the team name matches, and extract the current location from column B
         const team = teamData.find(row => row[0] === teamName);
-
         if (!team) {
           return await interaction.update({ content: `Team ${teamName} not found.`, components: [], ephemeral: true });
         }
-
-        const [currentLocation] = team;
+    
+        const currentLocation = team[1]; // Fetch current location from column B
+        console.log(`Current Location for ${teamName}: ${currentLocation}`);  // Log the current location
+    
+        // Calculate the new tile based on the current location and selected direction
         const newTile = calculateNewTile(currentLocation, selectedDirection);
-
+    
         if (!isValidTile(newTile)) {
           return await interaction.update({ content: `Invalid tile: ${newTile}.`, components: [], ephemeral: true });
         }
-
+    
+        // Check if the new tile meets the hidden requirements
         const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
           range: 'HiddenTileRequirements!A2:B',
         });
-
+    
         if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
           return await interaction.update({ content: `Cannot move to ${newTile} due to hidden requirements.`, components: [], ephemeral: true });
         }
-
-        // Update the team's location
+    
+        // Update the team's location in the Teams sheet
         await sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: `Teams!B${teamData.findIndex(row => row[0] === teamName) + 2}`,
+          range: `Teams!B${teamData.findIndex(row => row[0] === teamName) + 2}`, // Update column B (current location)
           valueInputOption: 'RAW',
           resource: {
             values: [[newTile]],
           },
         });
-
-        // Update the explored tiles if necessary
+    
+        // Update explored tiles if necessary
         await updateExploredTiles(teamSheet, teamName, newTile);
-
+    
         await interaction.update({ content: `Team ${teamName} moved to ${newTile}.`, components: [], ephemeral: true });
       } catch (error) {
         console.error('Error updating team location:', error);
         await interaction.update({ content: 'Failed to update team location.', components: [], ephemeral: true });
       }
     }
+
   } catch (error) {
     console.error('An error occurred in the interaction handler:', error);
   }
