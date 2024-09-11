@@ -53,7 +53,7 @@ const MapTileImageType = '.png';
 // Create a function to generate team options dynamically from teamEmojis
 function getTeamOptions() {
   return Object.keys(teamEmojis).map(team => ({
-    label: team,
+    name: team,
     value: team,
     emoji: teamEmojis[team],
   }));
@@ -78,11 +78,12 @@ const commands = [
         description: 'Optional: Select a team to view only their explored/unexplored tiles',
         type: 3, // String type
         required: false,
-        choices: getTeamOptions(), // Dynamically populate choices
+        choices: getTeamOptions(),
       },
     ],
   },
 ];
+
 
 
 (async () => {
