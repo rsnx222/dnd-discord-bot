@@ -40,7 +40,7 @@ const teamEmojis = {
   Blue: '🔵',
   Orange: '🟠',
   Yellow: '🟡',
-  Cyan: '🔵',
+  Cyan: '🩵',
 };
 
 // Handle interactions
