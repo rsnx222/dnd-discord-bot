@@ -185,6 +185,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+const commands = [
+  {
+    name: 'moveteam',
+    description: 'Move a team by selecting a direction',
+  },
+  {
+    name: 'locations',
+    description: 'Show current team locations',
+  },
+];
+
 
 (async () => {
   try {
