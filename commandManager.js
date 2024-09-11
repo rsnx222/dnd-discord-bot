@@ -1,15 +1,23 @@
 const { REST, Routes } = require('discord.js');
 const settings = require('./settings');
+const fs = require('fs');
+const path = require('path');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-async function registerCommands(DISCORD_CLIENT_ID, guildId, commandsCollection) {
+async function registerCommands(DISCORD_CLIENT_ID, guildId) {
   try {
     console.log('Started clearing and refreshing guild (/) commands.');
 
-    const commands = Array.from(commandsCollection.values()).map(command => command.data.toJSON());
+    // Load commands from the /commands directory
+    const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
 
-    // Clear all previous guild commands and register new ones
+    const commands = commandFiles.map(file => {
+      const command = require(`./commands/${file}`);
+      return command.data.toJSON(); // Ensure commands are properly formatted for registration
+    });
+
+    // Register commands with Discord
     await rest.put(
       Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
       { body: commands }
