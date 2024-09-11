@@ -83,7 +83,10 @@ module.exports = {
       const newTile = calculateNewTile(currentLocation, direction); 
 
       if (!newTile) {
-        await interaction.update({ content: 'Invalid move. The team cannot move in that direction.', components: [] });
+        await interaction.reply({
+          content: 'Invalid move. The team cannot move in that direction.',
+          ephemeral: true,
+        });
         return;
       }
 
@@ -103,9 +106,8 @@ module.exports = {
       const channelId = await databaseHelper.getTeamChannelId(teamName);
 
       if (!channelId) {
-        await interaction.update({
+        await interaction.reply({
           content: 'Failed to find the team’s channel. Please contact the event organizer.',
-          components: [],
           ephemeral: true,
         });
         return;
@@ -119,17 +121,15 @@ module.exports = {
         await channel.send({ files: [mapImagePath] });
       }
 
-      await interaction.update({
+      await interaction.reply({
         content: `Team ${teamName} moved ${direction} to ${newTile}.`,
-        components: [],
         ephemeral: true,
       });
 
     } catch (error) {
       console.error(`Error moving team ${teamName}:`, error);
-      await interaction.update({
+      await interaction.reply({
         content: 'Failed to move the team. Please try again later.',
-        components: [],
         ephemeral: true,
       });
     }
