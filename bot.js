@@ -339,3 +339,4 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 
   console.log(`Explored tiles for ${teamName} updated: ${updatedExploredTiles}`);
 }
+
