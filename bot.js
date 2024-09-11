@@ -458,8 +458,21 @@ async function generateMapImage(teamData) {
 }
 
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
-  const col = parseInt(tile.match(/image(\d+)x/)[1], 10); // Extract column number
-  const row = parseInt(tile.match(/x(\d+)/)[1], 10); // Extract row number
+  if (!tile) {
+    console.error('Tile is null or undefined.');
+    return [0, 0]; // Return default coordinates if tile is invalid
+  }
+
+  const colMatch = tile.match(/image(\d+)x/);
+  const rowMatch = tile.match(/x(\d+)/);
+
+  if (!colMatch || !rowMatch) {
+    console.error(`Invalid tile format: ${tile}`);
+    return [0, 0]; // Return default coordinates if tile format is invalid
+  }
+
+  const col = parseInt(colMatch[1], 10); // Extract column number
+  const row = parseInt(rowMatch[1], 10); // Extract row number
 
   // Convert tile to (x, y) coordinates for the 5x10 grid
   const x = (col - 1) * tileWidth + tileWidth / 2; // Center of the tile (adjust for size)
@@ -467,6 +480,7 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
 
   return [x, y];
 }
+
 
 
 // Login the bot
