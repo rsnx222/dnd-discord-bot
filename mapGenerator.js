@@ -2,7 +2,7 @@
 
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
-const { MapTileImageType, MapTileSourceURL, MapTileExploredSourceURL } = require('./settings');
+const { MapTileImageType, MapTileSourceURL, MapTileExploredSourceURL, teamIconBaseURL } = require('./settings');
 const teamManager = require('./teamManager');  // For managing team logic when drawing on the map
 
 async function generateMapImage(teamData, showAllTeams = true) {
