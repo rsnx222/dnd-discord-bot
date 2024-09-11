@@ -54,6 +54,7 @@ const MapTileImageType = '.png';
 function getTeamOptions() {
   return Object.keys(teamEmojis).map(team => ({
     name: team,
+    label: team,
     value: team,
     emoji: teamEmojis[team],
   }));
