@@ -1,5 +1,5 @@
 // teamManager.js
-const settings = require('./settings');
+const { teamEmojis } = require('./settings');
 
 // Get all team options for select menus
 function getTeamOptions() {
