@@ -39,134 +39,156 @@ const teamEmojis = {
   Cyan: '🔵',
 };
 
-// Command to start the move team interaction
+// Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isCommand()) return;
+  try {
+    // Handle /locations command
+    if (interaction.isCommand() && interaction.commandName === 'locations') {
+      await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction to prevent timeout
 
-  const { commandName } = interaction;
-
-  if (commandName === 'moveteam') {
-    // Select Menu for Team Selection
-    const teamSelectMenu = new SelectMenuBuilder()
-      .setCustomId('select_team')
-      .setPlaceholder('Select a team')
-      .addOptions(
-        { label: 'Pink', value: 'Pink', emoji: '🩷' },
-        { label: 'Green', value: 'Green', emoji: '🟢' },
-        { label: 'Grey', value: 'Grey', emoji: '🔘' },
-        { label: 'Blue', value: 'Blue', emoji: '🔵' },
-        { label: 'Orange', value: 'Orange', emoji: '🟠' },
-        { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
-        { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
-      );
-
-    const row = new ActionRowBuilder().addComponents(teamSelectMenu);
-
-    await interaction.reply({
-      content: 'Select a team to move:',
-      components: [row],
-      ephemeral: true,
-    });
-  }
-
-  // Handling team selection
-  if (interaction.customId === 'select_team') {
-    const selectedTeam = interaction.values[0]; // Selected team value
-
-    // Buttons for selecting direction
-    const directionButtons = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('north')
-        .setLabel('⬆️ North')
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId('south')
-        .setLabel('⬇️ South')
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId('west')
-        .setLabel('⬅️ West')
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId('east')
-        .setLabel('➡️ East')
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    await interaction.update({
-      content: `You selected ${selectedTeam}. Now choose the direction:`,
-      components: [directionButtons],
-      ephemeral: true,
-    });
-  }
-
-  // Handling direction buttons
-  if (['north', 'south', 'west', 'east'].includes(interaction.customId)) {
-    const selectedDirection = interaction.customId;
-    const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract selected team from previous message
-
-    try {
-      const teamSheet = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: 'Teams!A2:D',
-      });
-
-      const teamData = teamSheet.data.values || [];
-      const team = teamData.find(row => row[0] === teamName);
-
-      if (!team) {
-        return await interaction.update({ content: `Team ${teamName} not found.`, ephemeral: true });
-      }
-
-      const [currentLocation] = team;
-      const newTile = calculateNewTile(currentLocation, selectedDirection);
-
-      if (!isValidTile(newTile)) {
-        return await interaction.update({ content: `Invalid tile: ${newTile}.`, ephemeral: true });
-      }
-
-      const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: 'HiddenTileRequirements!A2:B',
-      });
-
-      if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
-        return await interaction.update({ content: `Cannot move to ${newTile} due to hidden requirements.`, ephemeral: true });
-      }
-
-      // Update the team's location
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `Teams!B${teamData.findIndex(row => row[0] === teamName) + 2}`,
-        valueInputOption: 'RAW',
-        resource: {
-          values: [[newTile]],
-        },
-      });
-
-      // Update the explored tiles if necessary
-      await updateExploredTiles(teamSheet, teamName, newTile);
-
-      await interaction.update({ content: `Team ${teamName} moved to ${newTile}.`, components: [], ephemeral: true });
-    } catch (error) {
-      console.error('Error updating team location:', error);
+      const range = 'Teams!A2:D'; // Adjust this range as needed
       try {
-        await interaction.update({ content: 'Failed to update team location.', ephemeral: true });
-      } catch (err) {
-        console.error('Failed to send reply:', err);
+        const response = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range,
+        });
+
+        const teamData = response.data.values || [];
+        let locations = 'Current Team Locations:\n';
+
+        teamData.forEach(row => {
+          const [teamName, currentLocation] = row;
+          const emoji = teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
+          locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
+        });
+
+        await interaction.editReply({ content: locations });
+      } catch (error) {
+        console.error('Error fetching data from Google Sheets:', error);
+        await interaction.editReply({ content: 'Failed to fetch data from Google Sheets.' });
       }
     }
+
+    // Handle /moveteam command initiation
+    if (interaction.isCommand() && interaction.commandName === 'moveteam') {
+      const teamSelectMenu = new SelectMenuBuilder()
+        .setCustomId('select_team')
+        .setPlaceholder('Select a team')
+        .addOptions(
+          { label: 'Pink', value: 'Pink', emoji: '🩷' },
+          { label: 'Green', value: 'Green', emoji: '🟢' },
+          { label: 'Grey', value: 'Grey', emoji: '🔘' },
+          { label: 'Blue', value: 'Blue', emoji: '🔵' },
+          { label: 'Orange', value: 'Orange', emoji: '🟠' },
+          { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
+          { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
+        );
+
+      const row = new ActionRowBuilder().addComponents(teamSelectMenu);
+
+      await interaction.reply({
+        content: 'Select a team to move:',
+        components: [row],
+        ephemeral: true,
+      });
+    }
+
+    // Handle team selection
+    if (interaction.isSelectMenu() && interaction.customId === 'select_team') {
+      const selectedTeam = interaction.values[0]; // Get selected team
+
+      const directionButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('north')
+          .setLabel('⬆️ North')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('south')
+          .setLabel('⬇️ South')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('west')
+          .setLabel('⬅️ West')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('east')
+          .setLabel('➡️ East')
+          .setStyle(ButtonStyle.Primary)
+      );
+
+      await interaction.update({
+        content: `You selected ${selectedTeam}. Now choose the direction:`,
+        components: [directionButtons],
+        ephemeral: true,
+      });
+    }
+
+    // Handle directional button press
+    if (interaction.isButton() && ['north', 'south', 'west', 'east'].includes(interaction.customId)) {
+      const selectedDirection = interaction.customId;
+      const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the selected team from the message
+
+      try {
+        const teamSheet = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: 'Teams!A2:D',
+        });
+
+        const teamData = teamSheet.data.values || [];
+        const team = teamData.find(row => row[0] === teamName);
+
+        if (!team) {
+          return await interaction.update({ content: `Team ${teamName} not found.`, components: [], ephemeral: true });
+        }
+
+        const [currentLocation] = team;
+        const newTile = calculateNewTile(currentLocation, selectedDirection);
+
+        if (!isValidTile(newTile)) {
+          return await interaction.update({ content: `Invalid tile: ${newTile}.`, components: [], ephemeral: true });
+        }
+
+        const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: 'HiddenTileRequirements!A2:B',
+        });
+
+        if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
+          return await interaction.update({ content: `Cannot move to ${newTile} due to hidden requirements.`, components: [], ephemeral: true });
+        }
+
+        // Update the team's location
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `Teams!B${teamData.findIndex(row => row[0] === teamName) + 2}`,
+          valueInputOption: 'RAW',
+          resource: {
+            values: [[newTile]],
+          },
+        });
+
+        // Update the explored tiles if necessary
+        await updateExploredTiles(teamSheet, teamName, newTile);
+
+        await interaction.update({ content: `Team ${teamName} moved to ${newTile}.`, components: [], ephemeral: true });
+      } catch (error) {
+        console.error('Error updating team location:', error);
+        await interaction.update({ content: 'Failed to update team location.', components: [], ephemeral: true });
+      }
+    }
+  } catch (error) {
+    console.error('An error occurred in the interaction handler:', error);
   }
 });
 
+// Login the bot
 client.once(Events.ClientReady, () => {
   console.log('Bot is online!');
 });
 
 client.login(DISCORD_TOKEN);
 
-// Existing utility functions for movement logic
-
+// Utility functions for movement logic
 function calculateNewTile(currentTile, direction) {
   const col = currentTile.charAt(0); // Letter (Column)
   const row = parseInt(currentTile.slice(1)); // Number (Row)
