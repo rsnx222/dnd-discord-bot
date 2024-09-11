@@ -4,7 +4,7 @@ const settings = require('./settings');
 
 // Setup authentication with Google Sheets API
 const auth = new google.auth.GoogleAuth({
-  keyFile: settings.credentialsPath,
+  keyFile: settings.credentialsBase64,
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
