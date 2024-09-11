@@ -413,18 +413,16 @@ async function generateMapImage(teamData) {
 
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
-    for (let col = 1; col <= 5; col++) { // Column letters from A to E
-      const tileLetter = String.fromCharCode(64 + row); // Convert row index to letter (A-E)
-      const tileNumber = col; // Column number (1-5)
-      const tile = `${tileLetter}${tileNumber}`; // Correct unexplored tile format A2
+    for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
+      const tile = `image${col}x${row}`; // Format 'image2x3.png'
 
       // Check if the tile is explored for any team
       const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
 
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
-        ? `${MapTileExploredSourceURL}row-${row}-column-${col}${MapTileImageType}` // Explored tile URL format: row-9-column-5.png
-        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Correct unexplored tile URL format: A2.png
+        ? `${MapTileExploredSourceURL}${tile}${MapTileImageType}` // Explored tile URL format: 'explored/image2x3.png'
+        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL format: 'image2x3.png'
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -459,15 +457,16 @@ async function generateMapImage(teamData) {
 }
 
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
-  const col = tile.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert letter to column index
-  const row = parseInt(tile.slice(1), 10); // Convert row part to number
+  const col = parseInt(tile.match(/image(\d+)x/)[1], 10); // Extract column number
+  const row = parseInt(tile.match(/x(\d+)/)[1], 10); // Extract row number
 
   // Convert tile to (x, y) coordinates for the 5x10 grid
-  const x = (row - 1) * tileWidth + tileWidth / 2; // Center of the tile (adjust for size)
-  const y = (col - 1) * tileHeight + tileHeight / 2;
+  const x = (col - 1) * tileWidth + tileWidth / 2; // Center of the tile (adjust for size)
+  const y = (row - 1) * tileHeight + tileHeight / 2;
 
   return [x, y];
 }
+
 
 // Login the bot
 client.once(Events.ClientReady, () => {
