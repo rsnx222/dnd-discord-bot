@@ -394,9 +394,9 @@ async function generateMapImage(teamData) {
   // Loop through the valid map grid (5 columns, 10 rows)
   for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
     for (let col = 1; col <= 5; col++) { // Column letters from A to E
-      const tileLetter = String.fromCharCode(64 + col); // Convert column index to letter (A-E)
-      const tileNumber = row; // Row number (1-10)
-      const tile = `${tileLetter}${tileNumber}`; // Tile in the format A2
+      const tileLetter = String.fromCharCode(64 + row); // Convert row index to letter (A-E)
+      const tileNumber = col; // Column number (1-5)
+      const tile = `${tileLetter}${tileNumber}`; // Correct unexplored tile format A2
 
       // Check if the tile is explored for any team
       const tileExplored = teamData.some(team => team.exploredTiles.includes(tile));
@@ -404,7 +404,7 @@ async function generateMapImage(teamData) {
       // Set tile image source based on exploration status
       const tileImageURL = tileExplored
         ? `${MapTileExploredSourceURL}row-${row}-column-${col}${MapTileImageType}` // Explored tile URL format: row-9-column-5.png
-        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Unexplored tile URL format: A2.png
+        : `${MapTileSourceURL}${tile}${MapTileImageType}`; // Corrected unexplored tile URL format: A2.png
 
       console.log(`Loading image from URL: ${tileImageURL}`);
 
@@ -441,8 +441,8 @@ function getCoordinatesFromTile(tile) {
   const row = parseInt(tile.slice(1), 10); // Convert row part to number
 
   // Convert tile to (x, y) coordinates for the 5x10 grid
-  const x = (col - 1) * 160 + 80; // Center of the tile (adjust for size)
-  const y = (row - 1) * 80 + 40;
+  const x = (row - 1) * 160 + 80; // Adjust for correct unexplored tile positioning
+  const y = (col - 1) * 80 + 40;
 
   return [x, y];
 }
