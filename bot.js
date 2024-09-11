@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Events, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -39,49 +39,71 @@ const teamEmojis = {
   Cyan: '🔵',
 };
 
-// Command handling
+// Command to start the move team interaction
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
 
   const { commandName } = interaction;
 
-  if (commandName === 'locations') {
-    const range = 'Teams!A2:D'; // Adjust this range as needed
+  if (commandName === 'moveteam') {
+    // Select Menu for Team Selection
+    const teamSelectMenu = new SelectMenuBuilder()
+      .setCustomId('select_team')
+      .setPlaceholder('Select a team')
+      .addOptions(
+        { label: 'Pink', value: 'Pink', emoji: '🩷' },
+        { label: 'Green', value: 'Green', emoji: '🟢' },
+        { label: 'Grey', value: 'Grey', emoji: '🔘' },
+        { label: 'Blue', value: 'Blue', emoji: '🔵' },
+        { label: 'Orange', value: 'Orange', emoji: '🟠' },
+        { label: 'Yellow', value: 'Yellow', emoji: '🟡' },
+        { label: 'Cyan', value: 'Cyan', emoji: '🔵' }
+      );
 
-    try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
+    const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
-      const teamData = response.data.values || [];
-      let locations = 'Current Team Locations:\n';
+    await interaction.reply({
+      content: 'Select a team to move:',
+      components: [row],
+      ephemeral: true,
+    });
+  }
 
-      teamData.forEach(row => {
-        const [teamName, currentLocation] = row;
-        const emoji = teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
-        locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
-      });
+  // Handling team selection
+  if (interaction.customId === 'select_team') {
+    const selectedTeam = interaction.values[0]; // Selected team value
 
-      await interaction.reply({ content: locations, ephemeral: true });
-    } catch (error) {
-      console.error('Error fetching data from Google Sheets:', error);
-      try {
-        await interaction.reply({ content: 'Failed to fetch data from Google Sheets.', ephemeral: true });
-      } catch (err) {
-        console.error('Failed to send reply:', err);
-      }
-    }
-  } else if (commandName === 'moveteam') {
-    const teamName = interaction.options.getString('team');
-    const direction = interaction.options.getString('direction');
+    // Buttons for selecting direction
+    const directionButtons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('north')
+        .setLabel('⬆️ North')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('south')
+        .setLabel('⬇️ South')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('west')
+        .setLabel('⬅️ West')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('east')
+        .setLabel('➡️ East')
+        .setStyle(ButtonStyle.Primary)
+    );
 
-    // Check if user has 'admin' role
-    const member = interaction.guild.members.cache.get(interaction.user.id);
-    const adminRole = interaction.guild.roles.cache.find(role => role.name === 'admin');
-    if (!adminRole || !member.roles.cache.has(adminRole.id)) {
-      return await interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
-    }
+    await interaction.update({
+      content: `You selected ${selectedTeam}. Now choose the direction:`,
+      components: [directionButtons],
+      ephemeral: true,
+    });
+  }
+
+  // Handling direction buttons
+  if (['north', 'south', 'west', 'east'].includes(interaction.customId)) {
+    const selectedDirection = interaction.customId;
+    const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract selected team from previous message
 
     try {
       const teamSheet = await sheets.spreadsheets.values.get({
@@ -93,14 +115,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const team = teamData.find(row => row[0] === teamName);
 
       if (!team) {
-        return await interaction.reply({ content: `Team ${teamName} not found.`, ephemeral: true });
+        return await interaction.update({ content: `Team ${teamName} not found.`, ephemeral: true });
       }
 
       const [currentLocation] = team;
-      const newTile = calculateNewTile(currentLocation, direction);
+      const newTile = calculateNewTile(currentLocation, selectedDirection);
 
       if (!isValidTile(newTile)) {
-        return await interaction.reply({ content: `Invalid tile: ${newTile}.`, ephemeral: true });
+        return await interaction.update({ content: `Invalid tile: ${newTile}.`, ephemeral: true });
       }
 
       const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
@@ -109,7 +131,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
 
       if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
-        return await interaction.reply({ content: `Cannot move to ${newTile} due to hidden requirements.`, ephemeral: true });
+        return await interaction.update({ content: `Cannot move to ${newTile} due to hidden requirements.`, ephemeral: true });
       }
 
       // Update the team's location
@@ -125,11 +147,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Update the explored tiles if necessary
       await updateExploredTiles(teamSheet, teamName, newTile);
 
-      await interaction.reply({ content: `Team ${teamName} moved to ${newTile}.`, ephemeral: true });
+      await interaction.update({ content: `Team ${teamName} moved to ${newTile}.`, components: [], ephemeral: true });
     } catch (error) {
       console.error('Error updating team location:', error);
       try {
-        await interaction.reply({ content: 'Failed to update team location.', ephemeral: true });
+        await interaction.update({ content: 'Failed to update team location.', ephemeral: true });
       } catch (err) {
         console.error('Failed to send reply:', err);
       }
@@ -143,7 +165,8 @@ client.once(Events.ClientReady, () => {
 
 client.login(DISCORD_TOKEN);
 
-// This is the updated function to handle tile calculation and prevent NaN issues
+// Existing utility functions for movement logic
+
 function calculateNewTile(currentTile, direction) {
   const col = currentTile.charAt(0); // Letter (Column)
   const row = parseInt(currentTile.slice(1)); // Number (Row)
@@ -155,14 +178,10 @@ function calculateNewTile(currentTile, direction) {
   let newRow = row;
 
   switch (direction) {
-    case 'up': newRow -= 1; break;
-    case 'down': newRow += 1; break;
-    case 'left': newColIndex -= 1; break;
-    case 'right': newColIndex += 1; break;
-    case 'up-left': newRow -= 1; newColIndex -= 1; break;
-    case 'up-right': newRow -= 1; newColIndex += 1; break;
-    case 'down-left': newRow += 1; newColIndex -= 1; break;
-    case 'down-right': newRow += 1; newColIndex += 1; break;
+    case 'north': newRow -= 1; break;
+    case 'south': newRow += 1; break;
+    case 'west': newColIndex -= 1; break;
+    case 'east': newColIndex += 1; break;
     default: return null; // Invalid direction
   }
 
