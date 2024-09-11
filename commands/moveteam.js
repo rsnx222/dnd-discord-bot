@@ -2,6 +2,8 @@
 
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../databaseHelper'); // Use the new database helper
+const { calculateNewTile } = require('../movementLogic'); // Ensure this is imported correctly
+
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -62,6 +64,12 @@ module.exports = {
 
   // Handle direction button press
   async handleButton(interaction) {
+    const newTile = calculateNewTile(currentLocation, direction); // Use the current team's location and the direction
+
+    if (!newTile) {
+      await interaction.update({ content: 'Invalid move. The team cannot move in that direction.', components: [] });
+      return;
+    }
     const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
 
