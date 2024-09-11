@@ -28,7 +28,7 @@ module.exports = {
 
       if (selectedTeam) {
         // If a team is selected, filter the data to only include that team
-        filteredTeamData = teamData.filter(team => team.team_name === selectedTeam); // Adjust DB column names if necessary
+        filteredTeamData = teamData.filter(team => team.teamName === selectedTeam); // Adjust DB column names if necessary
         showAllTeams = false;  // Set flag to show only the selected team's explored tiles
       }
 
