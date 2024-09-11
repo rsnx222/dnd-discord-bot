@@ -1,13 +1,5 @@
 // teamManager.js
-const teamEmojis = {
-  Pink: '🩷',
-  Green: '🟢',
-  Grey: '🔘',
-  Blue: '🔵',
-  Orange: '🟠',
-  Yellow: '🟡',
-  Cyan: '🩵',
-};
+const settings = require('./settings');
 
 // Get all team options for select menus
 function getTeamOptions() {

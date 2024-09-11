@@ -1,6 +1,6 @@
 // commandManager.js
 const { REST, Routes } = require('discord.js');
-require('dotenv').config();
+const settings = require('./settings');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 

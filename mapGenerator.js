@@ -1,10 +1,9 @@
 // mapGenerator.js
 const { createCanvas, loadImage } = require('canvas');
-const teamIconBaseURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/icons/players/';
+const fs = require('fs');
+const settings = require('./settings');
+const teamManager = require('./teamManager');  // For managing team logic when drawing on the map
 
-const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/';
-const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
-const MapTileImageType = '.png';
 
 async function generateMapImage(teamData, showAllTeams = true) {
   const tileWidth = 192; // Half of 384px

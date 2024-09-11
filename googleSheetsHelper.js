@@ -1,21 +1,14 @@
 // googleSheetsHelper.js
-const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
+const settings = require('./settings');
 
-// Your setup for Google Sheets
-const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
-const credentialsPath = path.join(__dirname, 'credentials.json');
-fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
-
-const auth = new GoogleAuth({
-  keyFile: credentialsPath,
-  scopes: 'https://www.googleapis.com/auth/spreadsheets',
+// Setup authentication with Google Sheets API
+const auth = new google.auth.GoogleAuth({
+  keyFile: settings.credentialsPath,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
 const sheets = google.sheets({ version: 'v4', auth });
-const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
 
 // Function to fetch team data
 async function getTeamData() {
@@ -59,4 +52,5 @@ async function updateTeamLocation(teamName, newLocation) {
 module.exports = {
   getTeamData,
   updateTeamLocation,
+  sheets,
 };
