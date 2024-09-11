@@ -202,7 +202,7 @@ const commands = [
     console.log('Started refreshing guild (/) commands.');
 
     await rest.put(
-      Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
+      Routes.applicationGuildCommands(process.env.DISCORD_TOKEN, guildId),
       { body: commands }
     );
 
