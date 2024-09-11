@@ -9,7 +9,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // Ensure this is included
+    GatewayIntentBits.MessageContent,
   ],
 });
 
@@ -143,14 +143,14 @@ client.once(Events.ClientReady, () => {
 
 client.login(DISCORD_TOKEN);
 
-// This is the updated function to correctly handle tile calculation and prevent NaN issues
+// This is the updated function to handle tile calculation and prevent NaN issues
 function calculateNewTile(currentTile, direction) {
   const col = currentTile.charAt(0); // Letter (Column)
   const row = parseInt(currentTile.slice(1)); // Number (Row)
 
   if (isNaN(row)) return null; // Ensure row is a number
 
-  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0); // Convert column letter to index
+  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0); // Convert column letter to index (A = 0, B = 1, etc.)
   let newColIndex = colIndex;
   let newRow = row;
 
@@ -166,8 +166,7 @@ function calculateNewTile(currentTile, direction) {
     default: return null; // Invalid direction
   }
 
-  // Convert back to column letter and check boundaries
-  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex);
+  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex); // Convert back to column letter
 
   // Ensure the move is within map bounds (A to E for columns, 1 to 5 for rows)
   if (newRow < 1 || newRow > 5 || newColIndex < 0 || newColIndex > 4) {
