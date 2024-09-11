@@ -1,10 +1,9 @@
 const { Client, GatewayIntentBits, Events, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { GoogleAuth } = require('google-auth-library');
-const { google } = require('googleapis');
-const { createCanvas, loadImage } = require('canvas');
-const fs = require('fs');
-const path = require('path');
-const commandManager = require('./commandManager'); // Import the command manager
+const commandManager = require('./commandManager'); // Command management functions
+const { getTeamOptions, getTeamEmoji } = require('./teamManager'); // Team-related utilities
+const { getTeamData, updateTeamLocation, updateExploredTiles } = require('./googleSheetsHelper'); // Google Sheets interaction
+const { calculateNewTile, isValidTile, canMoveToTile } = require('./movementLogic'); // Movement logic
+const { generateMapImage } = require('./mapGenerator'); // Map generation
 require('dotenv').config();
 
 const client = new Client({
@@ -19,47 +18,7 @@ const guildId = '1242722293700886591';
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
-const credentialsPath = path.join(__dirname, 'credentials.json');
-fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
-
-const auth = new GoogleAuth({
-  keyFile: credentialsPath,
-  scopes: 'https://www.googleapis.com/auth/spreadsheets',
-});
-
-const sheets = google.sheets({ version: 'v4', auth });
-
-// Your Google Sheets ID
-const spreadsheetId = '1GNbfUs3fb2WZ4Zn9rI7kHq7ZwKECOa3psrg7sx2W3oM';
-
-// Emojis for teams
-const teamEmojis = {
-  Pink: '🩷',
-  Green: '🟢',
-  Grey: '🔘',
-  Blue: '🔵',
-  Orange: '🟠',
-  Yellow: '🟡',
-  Cyan: '🩵',
-};
-
-// Base URLs for tile images
-const MapTileSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/';
-const MapTileExploredSourceURL = 'https://raw.githubusercontent.com/rsnx222/d-and-d/main/maps/custom-october-2024/explored/';
-const MapTileImageType = '.png';
-
-// Create a function to generate team options dynamically from teamEmojis
-function getTeamOptions() {
-  return Object.keys(teamEmojis).map(team => ({
-    name: team,
-    label: team,
-    value: team,
-    emoji: teamEmojis[team],
-  }));
-}
-
-// Slash command definitions
+// Slash command definitions (uses team options from teamManager)
 const commands = [
   {
     name: 'moveteam',
@@ -88,413 +47,127 @@ const commands = [
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) {
-      // Handle /locations command
       if (interaction.commandName === 'locations') {
-        await interaction.deferReply({ ephemeral: true }); // Acknowledge the interaction to prevent timeout
-
-        const range = 'Teams!A2:D'; // Adjust this range as needed
-        try {
-          const response = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range,
-          });
-
-          const teamData = response.data.values || [];
-          let locations = 'Current Team Locations:\n';
-
-          teamData.forEach(row => {
-            const [teamName, currentLocation] = row;
-            const emoji = teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
-            locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
-          });
-
-          await interaction.editReply({ content: locations });
-        } catch (error) {
-          console.error('Error fetching data from Google Sheets:', error);
-          await interaction.editReply({ content: 'Failed to fetch data from Google Sheets.' });
-        }
+        await handleLocationsCommand(interaction);
+      } else if (interaction.commandName === 'moveteam') {
+        await handleMoveTeamCommand(interaction);
+      } else if (interaction.commandName === 'showmap') {
+        await handleShowMapCommand(interaction);
       }
-
-      // Handle /moveteam command
-      if (interaction.commandName === 'moveteam') {
-        const teamSelectMenu = new StringSelectMenuBuilder()
-          .setCustomId('select_team')
-          .setPlaceholder('Select a team')
-          .addOptions(getTeamOptions()); // Dynamically populate options
-
-        const row = new ActionRowBuilder().addComponents(teamSelectMenu);
-
-        await interaction.reply({
-          content: 'Select a team to move:',
-          components: [row],
-          ephemeral: true,
-        });
-      }
-
-      // Handle /showmap command
-      if (interaction.commandName === 'showmap') {
-        const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
-
-        // Defer reply to keep interaction alive
-        await interaction.deferReply({ ephemeral: true });
-
-        try {
-          const range = 'Teams!A2:C';
-          const response = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range,
-          });
-
-          const teamData = response.data.values.map(row => ({
-            teamName: row[0],
-            currentLocation: row[1],
-            exploredTiles: row[2] ? row[2].split(',') : []
-          }));
-
-          let filteredTeamData = teamData;
-          let showAllTeams = true;
-
-          if (selectedTeam) {
-            // If a team is selected, filter the data to only include that team
-            filteredTeamData = teamData.filter(team => team.teamName === selectedTeam);
-            showAllTeams = false; // Set flag to show only the selected team's explored tiles
-          }
-
-          // Generate the map image for either all teams (unexplored) or the selected team
-          const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
-
-          await interaction.editReply({ files: [imagePath] });
-        } catch (error) {
-          console.error("Error generating map or fetching data:", error);
-          await interaction.editReply({ content: 'Failed to generate the map.' });
-        }
-      }
-
-
-
     }
 
-    // Handle team selection
+    // Handle team selection for moving teams
     if (interaction.isStringSelectMenu() && interaction.customId === 'select_team') {
-      const selectedTeam = interaction.values[0]; // Get selected team
-
-      const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('north')
-          .setLabel('⬆️ North')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('south')
-          .setLabel('⬇️ South')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('west')
-          .setLabel('⬅️ West')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('east')
-          .setLabel('➡️ East')
-          .setStyle(ButtonStyle.Primary)
-      );
-
-      await interaction.update({
-        content: `You selected ${selectedTeam}. Now choose the direction:`,
-        components: [directionButtons],
-        ephemeral: true,
-      });
+      await handleTeamSelection(interaction);
     }
 
-    // Handle directional button press
+    // Handle directional button press for movement
     if (interaction.isButton() && ['north', 'south', 'west', 'east'].includes(interaction.customId)) {
-      const selectedDirection = interaction.customId;
-      const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the selected team from the message
-
-      try {
-        await interaction.deferReply({ ephemeral: true }); // Defer the reply early
-
-        // Fetch the Teams sheet data, including Columns A (Team), B (Current Location), and C (Explored Tiles)
-        const teamSheet = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: 'Teams!A2:C', // Update range to include Columns A, B, and C
-        });
-
-        const teamData = teamSheet.data.values || [];
-
-        // Find the row where the team name matches, and extract the current location from column B
-        const team = teamData.find(row => row[0] === teamName);
-        if (!team) {
-          return await interaction.editReply({ content: `Team ${teamName} not found.` });
-        }
-
-        const currentLocation = team[1]; // Fetch current location from column B
-        console.log(`Current Location for ${teamName}: ${currentLocation}`);  // Log the current location
-
-        // Calculate the new tile based on the current location and selected direction
-        const newTile = calculateNewTile(currentLocation, selectedDirection);
-
-        if (!isValidTile(newTile)) {
-          return await interaction.editReply({ content: `Invalid tile: ${newTile}.` });
-        }
-
-        // Check if the new tile meets the hidden requirements
-        const hiddenRequirementsSheet = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: 'HiddenTileRequirements!A2:B',
-        });
-
-        if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
-          return await interaction.editReply({ content: `Cannot move to ${newTile} due to hidden requirements.` });
-        }
-
-        // Update the team's location in the Teams sheet
-        await sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: `Teams!B${teamData.findIndex(row => row[0] === teamName) + 2}`, // Update column B (current location)
-          valueInputOption: 'RAW',
-          resource: {
-            values: [[newTile]],
-          },
-        });
-
-        // Update explored tiles if necessary
-        await updateExploredTiles(teamSheet, teamName, newTile);
-
-        await interaction.editReply({ content: `Team ${teamName} moved to ${newTile}.` });
-      } catch (error) {
-        console.error('Error updating team location:', error);
-        await interaction.editReply({ content: 'Failed to update team location.' });
-      }
+      await handleDirectionSelection(interaction);
     }
-
   } catch (error) {
     console.error('An error occurred in the interaction handler:', error);
   }
 });
 
-// Utility functions for movement logic
-function calculateNewTile(currentTile, direction) {
-  console.log(`Current Tile: ${currentTile}`);  // Log the current tile
-  console.log(`Direction: ${direction}`);  // Log the direction
+// Handlers
+async function handleLocationsCommand(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+  try {
+    const teamData = await getTeamData(); // Fetch team data from Google Sheets
+    let locations = 'Current Team Locations:\n';
 
-  // Ensure currentTile is valid and has a column letter and a row number
-  if (!currentTile || currentTile.length < 2) {
-    console.error('Invalid current tile format');
-    return null;
+    teamData.forEach(({ teamName, currentLocation }) => {
+      const emoji = getTeamEmoji(teamName); // Fetch team emoji
+      locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
+    });
+
+    await interaction.editReply({ content: locations });
+  } catch (error) {
+    console.error('Error fetching team locations:', error);
+    await interaction.editReply({ content: 'Failed to fetch team locations.' });
   }
-
-  const col = currentTile.charAt(0); // Extract letter (column)
-  const row = parseInt(currentTile.slice(1)); // Extract number (row)
-
-  console.log(`Parsed Column: ${col}, Parsed Row: ${row}`);  // Log parsed column and row
-
-  if (isNaN(row)) {
-    console.error('Row is not a number');
-    return null; // Ensure row is a number
-  }
-
-  // Convert column letter to index (A = 0, B = 1, C = 2, etc.)
-  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0);
-  let newColIndex = colIndex;
-  let newRow = row;
-
-  // Calculate new position based on the direction
-  switch (direction) {
-    case 'north': newRow -= 1; break;
-    case 'south': newRow += 1; break;
-    case 'west': newColIndex -= 1; break;
-    case 'east': newColIndex += 1; break;
-    default: 
-      console.error('Invalid direction');
-      return null;
-  }
-
-  // Ensure the new column is within bounds (B to F = col index 1 to 5)
-  if (newColIndex < 1 || newColIndex > 5) {
-    console.error('New column index out of bounds');
-    return null;
-  }
-
-  // Ensure the new row is within bounds (3 to 12)
-  if (newRow < 3 || newRow > 12) {
-    console.error('New row out of bounds');
-    return null;
-  }
-
-  // Convert new column index back to a letter
-  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex);
-
-  console.log(`New Tile: ${newCol}${newRow}`);  // Log the final new tile
-  return `${newCol}${newRow}`; // Return the new tile (e.g., 'C7')
 }
 
-function isValidTile(tile) {
-  return tile !== null;
-}
+async function handleMoveTeamCommand(interaction) {
+  const teamSelectMenu = new StringSelectMenuBuilder()
+    .setCustomId('select_team')
+    .setPlaceholder('Select a team')
+    .addOptions(getTeamOptions()); // Dynamically populate options
 
-function canMoveToTile(tile, hiddenRequirements) {
-  for (const [requirementTile, requirement] of hiddenRequirements) {
-    if (requirementTile === tile) {
-      return !requirement || requirement === 'None';
-    }
-  }
-  return true;
-}
-
-async function updateExploredTiles(teamSheet, teamName, newTile) {
-  const teamData = teamSheet.data.values || [];
-
-  // Log the entire data for the team to see if we're fetching the right range
-  console.log(`Full team data fetched from Google Sheets:`, teamData);
-
-  const teamRowIndex = teamData.findIndex(row => row[0] === teamName) + 2; // Find the row of the team
-
-  // Fetch existing explored tiles (Column C)
-  let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
-
-  console.log(`Fetched explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log the fetched data
-
-  // Clean up the data to remove any unwanted commas or spaces
-  const cleanedExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
-
-  console.log(`Cleaned explored tiles: '${cleanedExploredTiles}'`); // Log cleaned tiles
-
-  // Convert the cleaned data into an array
-  const exploredTilesArray = cleanedExploredTiles ? cleanedExploredTiles.split(',') : [];
-
-  console.log(`Explored tiles array: [${exploredTilesArray.join(', ')}]`); // Log the array
-
-  // Check if the new tile is already in the explored tiles
-  if (exploredTilesArray.includes(newTile)) {
-    console.log(`Tile ${newTile} is already in the explored list for ${teamName}.`);
-    return; // No need to update if the tile is already explored
-  }
-
-  // Append the new tile
-  exploredTilesArray.push(newTile); 
-  const updatedExploredTiles = exploredTilesArray.join(','); // Rebuild the comma-separated string
-
-  console.log(`Updated explored tiles for ${teamName}: '${updatedExploredTiles}'`); // Log the new tiles
-
-  // Update the "Explored Tiles" column (C)
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `Teams!C${teamRowIndex}`, // Column C contains explored tiles
-    valueInputOption: 'RAW',
-    resource: {
-      values: [[updatedExploredTiles]],
-    },
+  const row = new ActionRowBuilder().addComponents(teamSelectMenu);
+  await interaction.reply({
+    content: 'Select a team to move:',
+    components: [row],
+    ephemeral: true,
   });
-
-  console.log(`Successfully updated explored tiles for ${teamName}: '${updatedExploredTiles}'`);
 }
 
-// Fetch team data and explored tiles
-async function generateMapImage(teamData, showAllTeams = true) {
-  const tileWidth = 192; // Half of 384px
-  const tileHeight = 47.5; // Half of 95px
+async function handleShowMapCommand(interaction) {
+  const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
+  await interaction.deferReply({ ephemeral: true });
 
-  // Adjust canvas size based on the new tile dimensions (5 columns, 10 rows)
-  const canvas = createCanvas(960, 475); // 5 tiles wide, 10 tiles deep
-  const ctx = canvas.getContext('2d');
-
-  // Loop through the valid map grid (5 columns, 10 rows)
-  for (let row = 1; row <= 10; row++) { // Row numbers from 1 to 10
-    for (let col = 1; col <= 5; col++) { // Column numbers from 1 to 5
-      const tile = `${String.fromCharCode(64 + col)}${row}`; // Convert column and row to the tile format, e.g., B3
-      const imageName = `image${col}x${row}${MapTileImageType}`; // Image name based on format 'image2x3.png'
-
-      let tileImageURL;
-
-      // For the generic map, only show unexplored tiles
-      if (showAllTeams) {
-        tileImageURL = `${MapTileSourceURL}${imageName}`; // Always show unexplored tile for the generic map
-      } 
-      // For individual team view, show explored tiles if applicable
-      else if (teamData.some(team => team.exploredTiles.includes(tile))) {
-        tileImageURL = `${MapTileExploredSourceURL}${imageName}`; // Show explored tile for individual team
-      } 
-      else {
-        tileImageURL = `${MapTileSourceURL}${imageName}`; // Show unexplored tile if it's not explored
-      }
-
-      console.log(`Loading image from URL: ${tileImageURL}`);
-
-      try {
-        const tileImage = await loadImage(tileImageURL);
-        ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight); // Adjust sizes for grid
-      } catch (error) {
-        console.error(`Error loading image from URL: ${tileImageURL}`, error);
-      }
-    }
+  try {
+    const teamData = await getTeamData();
+    const filteredTeamData = selectedTeam ? teamData.filter(team => team.teamName === selectedTeam) : teamData;
+    const showAllTeams = !selectedTeam; // Flag for showing unexplored tiles for all teams
+    const imagePath = await generateMapImage(filteredTeamData, showAllTeams); // Generate the map image
+    await interaction.editReply({ files: [imagePath] });
+  } catch (error) {
+    console.error('Error generating map or fetching data:', error);
+    await interaction.editReply({ content: 'Failed to generate the map.' });
   }
+}
 
-  // Draw team positions with team-specific colors
-  teamData.forEach(team => {
-    const { currentLocation, teamName } = team;
-    const [x, y] = getCoordinatesFromTile(currentLocation, tileWidth, tileHeight);
+async function handleTeamSelection(interaction) {
+  const selectedTeam = interaction.values[0]; // Get selected team
 
-    // Set the fill color dynamically based on the team name (lowercase)
-    ctx.fillStyle = teamName.toLowerCase(); // Set fill color to team name in lowercase (e.g., 'orange')
+  const directionButtons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+  );
 
-    // Draw circle or icon for the team
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fill();
+  await interaction.update({
+    content: `You selected ${selectedTeam}. Now choose the direction:`,
+    components: [directionButtons],
+    ephemeral: true,
   });
-
-  // Save canvas as image
-  const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync('./map.png', buffer);
-
-  return './map.png';
 }
 
-function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
-  if (!tile) {
-    console.error('Tile is null or undefined.');
-    return [0, 0]; // Return default coordinates if tile is invalid
+async function handleDirectionSelection(interaction) {
+  const selectedDirection = interaction.customId;
+  const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
+
+  try {
+    await interaction.deferReply({ ephemeral: true });
+    const newTile = calculateNewTile(await getCurrentLocation(teamName), selectedDirection);
+
+    if (!isValidTile(newTile)) {
+      return await interaction.editReply({ content: `Invalid tile: ${newTile}.` });
+    }
+
+    if (!(await canMoveToTile(newTile))) {
+      return await interaction.editReply({ content: `Cannot move to ${newTile} due to hidden requirements.` });
+    }
+
+    await updateTeamLocation(teamName, newTile); // Update team's current location
+    await updateExploredTiles(teamName, newTile); // Update explored tiles
+
+    await interaction.editReply({ content: `Team ${teamName} moved to ${newTile}.` });
+  } catch (error) {
+    console.error('Error moving team:', error);
+    await interaction.editReply({ content: 'Failed to move the team.' });
   }
-
-  // Check if the tile is in the expected "imageNxM" format
-  const imageFormatMatch = tile.match(/image(\d+)x(\d+)/);
-  if (imageFormatMatch) {
-    const col = parseInt(imageFormatMatch[1], 10); // Extract column number
-    const row = parseInt(imageFormatMatch[2], 10); // Extract row number
-
-    // Convert tile to (x, y) coordinates for the 5x10 grid
-    const x = (col - 1) * tileWidth + tileWidth / 2; // Center of the tile
-    const y = (row - 1) * tileHeight + tileHeight / 2;
-
-    return [x, y];
-  }
-
-  // If the tile is in the "CxR" format (e.g., "C4"), handle this format
-  const gridFormatMatch = tile.match(/([A-Z])(\d+)/);
-  if (gridFormatMatch) {
-    const colLetter = gridFormatMatch[1]; // Extract the column letter (e.g., "C")
-    const row = parseInt(gridFormatMatch[2], 10); // Extract the row number (e.g., 4)
-
-    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // Convert the column letter to a number (A=1, B=2, etc.)
-
-    // Convert tile to (x, y) coordinates for the 5x10 grid
-    const x = (col - 1) * tileWidth + tileWidth / 2;
-    const y = (row - 1) * tileHeight + tileHeight / 2;
-
-    return [x, y];
-  }
-
-  console.error(`Invalid tile format: ${tile}`);
-  return [0, 0]; // Return default coordinates if tile format is invalid
 }
 
-// Login the bot
+// Login the bot and register commands
 client.once(Events.ClientReady, async () => {
   console.log('Bot is online!');
 
-  // Clear all old commands first
+  // Clear and register commands
   await commandManager.deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId);
-
-  // Register the current commands again
   await commandManager.registerCommands(DISCORD_CLIENT_ID, guildId, commands);
 });
 
