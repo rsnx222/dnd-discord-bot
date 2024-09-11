@@ -1,23 +1,19 @@
-// showmap.js
-
-const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../mapGenerator');
 const settings = require('../settings');
 const googleSheetsHelper = require('../googleSheetsHelper');
 const teamManager = require('../teamManager');
 
 module.exports = {
-  name: 'showmap',
-  description: 'Show the current map with team locations',
-  options: [
-    {
-      name: 'team',
-      description: 'Optional: Select a team to view only their explored/unexplored tiles',
-      type: 3, // String type
-      required: false,
-      choices: teamManager.getTeamOptions(),  // Dynamically generate team options from teamManager
-    },
-  ],
+  data: new SlashCommandBuilder()
+    .setName('showmap')
+    .setDescription('Show the current map with team locations')
+    .addStringOption(option =>
+      option.setName('team')
+        .setDescription('Optional: Select a team to view only their explored/unexplored tiles')
+        .setRequired(false)
+        .addChoices(...teamManager.getTeamOptions())),  // Dynamically generate team options from teamManager
+
   async execute(interaction) {
     const selectedTeam = interaction.options.getString('team'); // Get the selected team (optional)
     await interaction.deferReply({ ephemeral: true });

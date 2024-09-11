@@ -1,12 +1,13 @@
-// commandManager.js
 const { REST, Routes } = require('discord.js');
 const settings = require('./settings');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-async function registerCommands(DISCORD_CLIENT_ID, guildId, commands) {
+async function registerCommands(DISCORD_CLIENT_ID, guildId, commandsCollection) {
   try {
     console.log('Started clearing and refreshing guild (/) commands.');
+
+    const commands = Array.from(commandsCollection.values()).map(command => command.data.toJSON());
 
     // Clear all previous guild commands and register new ones
     await rest.put(
