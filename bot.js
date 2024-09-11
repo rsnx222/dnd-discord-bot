@@ -9,7 +9,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.MessageContent, // Re-add the messageContent intent
   ],
 });
 
@@ -144,29 +144,32 @@ client.once(Events.ClientReady, () => {
 client.login(DISCORD_TOKEN);
 
 function calculateNewTile(currentTile, direction) {
-  const rowLetter = currentTile.charAt(0);
-  const columnNumber = parseInt(currentTile.slice(1));
-  const rowNumber = rowLetter.charCodeAt(0) - 64;
-
-  let newRowNumber = rowNumber;
-  let newColumnNumber = columnNumber;
+  const col = currentTile.charAt(0);
+  const row = parseInt(currentTile.slice(1));
+  const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0);
+  let newColIndex = colIndex;
+  let newRow = row;
 
   switch (direction) {
-    case 'up': newRowNumber -= 1; break;
-    case 'down': newRowNumber += 1; break;
-    case 'left': newColumnNumber -= 1; break;
-    case 'right': newColumnNumber += 1; break;
-    case 'up-left': newRowNumber -= 1; newColumnNumber -= 1; break;
-    case 'up-right': newRowNumber -= 1; newColumnNumber += 1; break;
-    case 'down-left': newRowNumber += 1; newColumnNumber -= 1; break;
-    case 'down-right': newRowNumber += 1; newColumnNumber += 1; break;
+    case 'up': newRow -= 1; break;
+    case 'down': newRow += 1; break;
+    case 'left': newColIndex -= 1; break;
+    case 'right': newColIndex += 1; break;
+    case 'up-left': newRow -= 1; newColIndex -= 1; break;
+    case 'up-right': newRow -= 1; newColIndex += 1; break;
+    case 'down-left': newRow += 1; newColIndex -= 1; break;
+    case 'down-right': newRow += 1; newColIndex += 1; break;
     default: return null;
   }
 
-  if (newRowNumber < 1 || newColumnNumber < 1 || newRowNumber > 5 || newColumnNumber > 10) return null;
+  const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex);
+  
+  // Check if new tile is within valid range (A to E and 1 to 5)
+  if (newRow < 1 || newRow > 5 || newColIndex < 0 || newColIndex >= 5) {
+    return null;
+  }
 
-  const newRowLetter = String.fromCharCode(newRowNumber + 64);
-  return `${newRowLetter}${newColumnNumber}`;
+  return `${newCol}${newRow}`;
 }
 
 function isValidTile(tile) {
