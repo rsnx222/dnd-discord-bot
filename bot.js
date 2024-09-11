@@ -4,7 +4,7 @@ const { google } = require('googleapis');
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const path = require('path');
-const { REST, Routes } = require('discord.js');
+const commandManager = require('./commandManager'); // Import the command manager
 require('dotenv').config();
 
 const client = new Client({
@@ -19,7 +19,6 @@ const guildId = '1242722293700886591';
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 const credentialsBase64 = process.env.GOOGLE_SHEET_CREDENTIALS_BASE64;
 const credentialsPath = path.join(__dirname, 'credentials.json');
 fs.writeFileSync(credentialsPath, Buffer.from(credentialsBase64, 'base64'));
@@ -60,7 +59,7 @@ function getTeamOptions() {
   }));
 }
 
-// Register slash commands
+// Slash command definitions
 const commands = [
   {
     name: 'moveteam',
@@ -85,23 +84,13 @@ const commands = [
   },
 ];
 
-
-
-(async () => {
-  try {
-    console.log('Started clearing and refreshing guild (/) commands.');
-
-    // Clear all previous guild commands and register new ones
-    await rest.put(
-      Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
-      { body: commands }
-    );
-
-    console.log('Successfully reloaded guild (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
-})();
+// Register commands on bot start
+client.once(Events.ClientReady, async () => {
+  console.log('Bot is online!');
+  
+  // Register commands using commandManager
+  await commandManager.registerCommands(DISCORD_CLIENT_ID, guildId, commands);
+});
 
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -468,10 +457,6 @@ async function generateMapImage(teamData, showAllTeams = true) {
   return './map.png';
 }
 
-
-
-
-
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   if (!tile) {
     console.error('Tile is null or undefined.');
@@ -509,8 +494,6 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   console.error(`Invalid tile format: ${tile}`);
   return [0, 0]; // Return default coordinates if tile format is invalid
 }
-
-
 
 // Login the bot
 client.once(Events.ClientReady, () => {
