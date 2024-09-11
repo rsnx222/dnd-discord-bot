@@ -1,26 +1,26 @@
 // moveteam.js
 
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const googleSheetsHelper = require('../googleSheetsHelper');
+const databaseHelper = require('../databaseHelper'); // Use the new database helper
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('moveteam')
     .setDescription('Move a team by selecting a direction'),
-    
+
   async execute(interaction) {
     try {
-      // Fetch the team data from Google Sheets
-      const teamData = await googleSheetsHelper.getTeamData();
+      // Fetch team data from the database
+      const teamData = await databaseHelper.getTeamData();
 
       // Generate team options for the select menu
       const teamSelectMenu = new StringSelectMenuBuilder()
         .setCustomId('select_team')
         .setPlaceholder('Select a team')
         .addOptions(teamData.map(team => ({
-          label: team.teamName,
-          value: team.teamName,
-        }))); // Dynamically generate team options from Google Sheets data
+          label: team.team_name,  // Assuming your DB stores team name in 'team_name'
+          value: team.team_name,
+        }))); 
 
       const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
@@ -66,11 +66,14 @@ module.exports = {
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
 
     try {
-      // Update the team's location based on the direction
-      await googleSheetsHelper.updateTeamLocation(teamName, direction);
+      // Assuming you have a function to calculate the new tile based on direction
+      const newTile = calculateNewTile(teamName, direction); // Create this function if necessary
+      
+      // Update the team's location in the database
+      await databaseHelper.updateTeamLocation(teamName, newTile);
 
       await interaction.update({
-        content: `Team ${teamName} moved ${direction}.`,
+        content: `Team ${teamName} moved ${direction} to ${newTile}.`,
         components: [],
         ephemeral: true,
       });
@@ -82,5 +85,5 @@ module.exports = {
         ephemeral: true,
       });
     }
-  }
+  },
 };

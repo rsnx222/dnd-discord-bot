@@ -2,7 +2,7 @@
 
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../mapGenerator');
-const googleSheetsHelper = require('../googleSheetsHelper');
+const databaseHelper = require('../databaseHelper');
 const teamManager = require('../teamManager');
 
 module.exports = {
@@ -20,15 +20,15 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      // Use the helper method to get team data
-      const teamData = await googleSheetsHelper.getTeamData();
+      // Use the helper method to get team data from the database
+      const teamData = await databaseHelper.getTeamData();
 
       let filteredTeamData = teamData;
       let showAllTeams = true;
 
       if (selectedTeam) {
         // If a team is selected, filter the data to only include that team
-        filteredTeamData = teamData.filter(team => team.teamName === selectedTeam);
+        filteredTeamData = teamData.filter(team => team.team_name === selectedTeam); // Adjust DB column names if necessary
         showAllTeams = false;  // Set flag to show only the selected team's explored tiles
       }
 
