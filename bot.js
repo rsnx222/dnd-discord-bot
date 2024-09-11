@@ -37,20 +37,48 @@ client.once(Events.ClientReady, async () => {
 
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isCommand()) return;
+  if (interaction.isCommand()) {
+    const command = client.commands.get(interaction.commandName);
 
-  const command = client.commands.get(interaction.commandName);
+    if (!command) {
+      logger.error(`No command found for: ${interaction.commandName}`);
+      return;
+    }
 
-  if (!command) {
-    logger.error(`No command found for: ${interaction.commandName}`);
-    return;
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      logger.error(`Error executing command ${interaction.commandName}:`, error);
+      await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+    }
   }
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    logger.error(`Error executing command ${interaction.commandName}:`, error);
-    await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+  // Handle select menu interaction (e.g., for team selection in moveteam)
+  else if (interaction.isSelectMenu()) {
+    const command = client.commands.get('moveteam'); // Ensure the interaction is for moveteam
+
+    if (command && typeof command.handleSelectMenu === 'function') {
+      try {
+        await command.handleSelectMenu(interaction);
+      } catch (error) {
+        logger.error('Error handling select menu interaction:', error);
+        await interaction.reply({ content: 'Failed to handle team selection.', ephemeral: true });
+      }
+    }
+  }
+
+  // Handle button interaction (e.g., for directional movement in moveteam)
+  else if (interaction.isButton()) {
+    const command = client.commands.get('moveteam'); // Ensure the interaction is for moveteam
+
+    if (command && typeof command.handleButton === 'function') {
+      try {
+        await command.handleButton(interaction);
+      } catch (error) {
+        logger.error('Error handling button interaction:', error);
+        await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
+      }
+    }
   }
 });
 
