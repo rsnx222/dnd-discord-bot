@@ -23,7 +23,7 @@ module.exports = {
         .addOptions(teamData.map(team => ({
           label: team.teamName,  // Make sure you're using 'teamName' as per database structure
           value: team.teamName,
-        }))); 
+        })));
 
       const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
@@ -66,7 +66,18 @@ module.exports = {
   // Handle direction button press
   async handleButton(interaction) {
     const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
-    const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
+    const teamNameMatch = interaction.message.content.match(/You selected (.+?)\./);
+
+    if (!teamNameMatch) {
+      console.error('Could not extract team name from message content.');
+      await interaction.reply({
+        content: 'Failed to determine the team. Please try again.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const teamName = teamNameMatch[1]; // Extracted team name
 
     try {
       // Fetch the team's current location from the database
@@ -80,7 +91,7 @@ module.exports = {
       const currentLocation = team.currentLocation; // Now we have the team's current location
 
       // Calculate the new tile based on the direction
-      const newTile = calculateNewTile(currentLocation, direction); 
+      const newTile = calculateNewTile(currentLocation, direction);
 
       if (!newTile) {
         await interaction.reply({
@@ -119,6 +130,11 @@ module.exports = {
       if (channel) {
         await channel.send(eventMessage);
         await channel.send({ files: [mapImagePath] });
+      } else {
+        await interaction.reply({
+          content: 'Failed to fetch the team’s channel. Please contact the event organizer.',
+          ephemeral: true,
+        });
       }
 
       await interaction.reply({
