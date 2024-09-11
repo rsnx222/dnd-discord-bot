@@ -134,6 +134,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the selected team from the message
     
       try {
+        await interaction.deferReply({ ephemeral: true }); // Defer the reply early
+    
         // Fetch the Teams sheet data
         const teamSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
@@ -145,7 +147,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // Find the row where the team name matches, and extract the current location from column B
         const team = teamData.find(row => row[0] === teamName);
         if (!team) {
-          return await interaction.update({ content: `Team ${teamName} not found.`, components: [], ephemeral: true });
+          return await interaction.editReply({ content: `Team ${teamName} not found.` });
         }
     
         const currentLocation = team[1]; // Fetch current location from column B
@@ -155,7 +157,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const newTile = calculateNewTile(currentLocation, selectedDirection);
     
         if (!isValidTile(newTile)) {
-          return await interaction.update({ content: `Invalid tile: ${newTile}.`, components: [], ephemeral: true });
+          return await interaction.editReply({ content: `Invalid tile: ${newTile}.` });
         }
     
         // Check if the new tile meets the hidden requirements
@@ -165,7 +167,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
     
         if (!canMoveToTile(newTile, hiddenRequirementsSheet.data.values)) {
-          return await interaction.update({ content: `Cannot move to ${newTile} due to hidden requirements.`, components: [], ephemeral: true });
+          return await interaction.editReply({ content: `Cannot move to ${newTile} due to hidden requirements.` });
         }
     
         // Update the team's location in the Teams sheet
@@ -181,12 +183,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // Update explored tiles if necessary
         await updateExploredTiles(teamSheet, teamName, newTile);
     
-        await interaction.update({ content: `Team ${teamName} moved to ${newTile}.`, components: [], ephemeral: true });
+        await interaction.editReply({ content: `Team ${teamName} moved to ${newTile}.` });
       } catch (error) {
         console.error('Error updating team location:', error);
-        await interaction.update({ content: 'Failed to update team location.', components: [], ephemeral: true });
+        await interaction.editReply({ content: 'Failed to update team location.' });
       }
     }
+
 
   } catch (error) {
     console.error('An error occurred in the interaction handler:', error);
