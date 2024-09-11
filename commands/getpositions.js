@@ -1,4 +1,4 @@
-// locations.js
+// getpositions.js
 
 const { SlashCommandBuilder } = require('discord.js');
 const googleSheetsHelper = require('../googleSheetsHelper');
@@ -8,30 +8,23 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('getpositions')
     .setDescription('Show positions of all teams'),
-    
+
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      const range = 'Teams!A2:D'; // Adjust this range as needed
-      const response = await googleSheetsHelper.spreadsheets.values.get({
-        spreadsheetId: settings.spreadsheetId,
-        range,
-      });
+      // Use the helper method to get team data
+      const teamData = await googleSheetsHelper.getTeamData();
 
-      // Log the full response to help diagnose the issue
-      console.log('Google Sheets Response:', response);
-
-      // Check if the response contains data and values
-      if (!response.data || !response.data.values || response.data.values.length === 0) {
+      // Check if there is data
+      if (!teamData || teamData.length === 0) {
         throw new Error('No data returned from Google Sheets.');
       }
 
-      const teamData = response.data.values || [];
       let locations = 'Current Team Locations:\n';
 
       teamData.forEach(row => {
-        const [teamName, currentLocation] = row;
+        const { teamName, currentLocation } = row;
         const emoji = settings.teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
         locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
       });
