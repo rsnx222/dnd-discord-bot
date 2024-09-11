@@ -2,8 +2,7 @@
 
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../databaseHelper'); // Use the new database helper
-const { calculateNewTile } = require('../movementLogic'); // Ensure this is imported correctly
-
+const { calculateNewTile } = require('../movementLogic'); // Import the movement logic
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,8 +19,8 @@ module.exports = {
         .setCustomId('select_team')
         .setPlaceholder('Select a team')
         .addOptions(teamData.map(team => ({
-          label: team.teamName,  // Using 'teamName' as returned from the database
-          value: team.teamName,  // Same 'teamName' for the value
+          label: team.teamName,  // Make sure you're using 'teamName' as per database structure
+          value: team.teamName,
         }))); 
 
       const row = new ActionRowBuilder().addComponents(teamSelectMenu);
@@ -64,19 +63,28 @@ module.exports = {
 
   // Handle direction button press
   async handleButton(interaction) {
-    const newTile = calculateNewTile(currentLocation, direction); // Use the current team's location and the direction
-
-    if (!newTile) {
-      await interaction.update({ content: 'Invalid move. The team cannot move in that direction.', components: [] });
-      return;
-    }
     const direction = interaction.customId; // 'north', 'south', 'east', or 'west'
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1]; // Extract the team name
 
     try {
-      // Assuming you have a function to calculate the new tile based on direction
-      const newTile = calculateNewTile(teamName, direction); // Create this function if necessary
-      
+      // Fetch the team's current location from the database
+      const teamData = await databaseHelper.getTeamData();
+      const team = teamData.find(t => t.teamName === teamName);
+
+      if (!team || !team.currentLocation) {
+        throw new Error(`Could not find current location for team ${teamName}`);
+      }
+
+      const currentLocation = team.currentLocation; // Now we have the team's current location
+
+      // Calculate the new tile based on the direction
+      const newTile = calculateNewTile(currentLocation, direction); 
+
+      if (!newTile) {
+        await interaction.update({ content: 'Invalid move. The team cannot move in that direction.', components: [] });
+        return;
+      }
+
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
