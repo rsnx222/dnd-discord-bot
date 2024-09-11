@@ -51,7 +51,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
   }
 
   // Draw team positions with team-specific colors
-  teamData.forEach(team => {
+  for (const team of teamData) {
     const { currentLocation, teamName } = team;
     const [x, y] = getCoordinatesFromTile(currentLocation, tileWidth, tileHeight);
 
@@ -59,12 +59,12 @@ async function generateMapImage(teamData, showAllTeams = true) {
     const teamIconURL = `${settings.teamIconBaseURL}${teamName}.png` || `${settings.teamIconBaseURL}Black.png`;
 
     try {
-      const iconImage = await loadImage(teamIconURL);
+      const iconImage = await loadImage(teamIconURL); // Use await to load the image asynchronously
       ctx.drawImage(iconImage, x - 16, y - 16, 32, 32); // Draw team icon at current location
     } catch (error) {
       console.error(`Error loading team icon: ${teamIconURL}`, error);
     }
-  });
+  }
 
   // Save canvas as image
   const buffer = canvas.toBuffer('image/png');
