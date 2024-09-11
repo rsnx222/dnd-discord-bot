@@ -15,7 +15,7 @@ async function getDBConnection() {
 async function getTeamData() {
   try {
     const connection = await getDBConnection();
-    const [rows] = await connection.execute('SELECT team_name, location, explored_tiles FROM teams');  // Adjust this query as per your database structure
+    const [rows] = await connection.execute('SELECT * FROM teams');
 
     return rows.map(row => ({
       teamName: row.team_name,
