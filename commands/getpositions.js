@@ -24,9 +24,17 @@ module.exports = {
       let locations = 'Current Team Locations:\n';
 
       teamData.forEach(row => {
-        const { team_name: teamName, location: currentLocation } = row; // Adjust for DB column names
-        const emoji = settings.teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji found
-        locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
+        const teamName = row.team_name; // 'team_name' matches your database structure
+        const currentLocation = row.location; // 'location' matches your database structure
+
+        // Check for undefined values in the row
+        if (!teamName || !currentLocation) {
+          console.error('Team name or location is undefined');
+          locations += 'Error: team name or location is missing.\n';
+        } else {
+          const emoji = settings.teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji is found
+          locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
+        }
       });
 
       await interaction.editReply({ content: locations });
