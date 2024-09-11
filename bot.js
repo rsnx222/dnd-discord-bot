@@ -314,21 +314,26 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
   const teamRowIndex = teamData.findIndex(row => row[0] === teamName) + 2; // Find the row of the team
 
   // Fetch existing explored tiles (Column C)
-  let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
+  const currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
 
-  console.log(`Current explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log current tiles for debugging
+  console.log(`Fetched explored tiles for ${teamName}: '${currentExploredTiles}'`); // Log the fetched data
+  
+  // If the value is empty, check if it's truly empty in the Google Sheet
+  if (!currentExploredTiles) {
+    console.log(`Warning: No explored tiles data found for ${teamName}. Is Column C empty in the Google Sheet?`);
+  }
 
-  // Trim any leading/trailing commas/spaces
-  currentExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
+  // Clean up the data to remove any unwanted commas or spaces
+  const cleanedExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
 
-  console.log(`Cleaned explored tiles: '${currentExploredTiles}'`); // Log cleaned tiles
+  console.log(`Cleaned explored tiles: '${cleanedExploredTiles}'`); // Log cleaned tiles
 
-  // Split into an array of tiles if not empty, otherwise initialize an empty array
-  const exploredTilesArray = currentExploredTiles ? currentExploredTiles.split(',') : []; 
+  // Convert the cleaned data into an array
+  const exploredTilesArray = cleanedExploredTiles ? cleanedExploredTiles.split(',') : [];
 
-  console.log(`Explored tiles array: [${exploredTilesArray.join(', ')}]`); // Log the array for debugging
+  console.log(`Explored tiles array: [${exploredTilesArray.join(', ')}]`); // Log the array
 
-  // Check if the new tile is already explored
+  // Check if the new tile is already in the explored tiles
   if (exploredTilesArray.includes(newTile)) {
     console.log(`Tile ${newTile} is already in the explored list for ${teamName}.`);
     return; // No need to update if the tile is already explored
@@ -352,3 +357,4 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
 
   console.log(`Successfully updated explored tiles for ${teamName}: '${updatedExploredTiles}'`);
 }
+
