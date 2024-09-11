@@ -223,6 +223,8 @@ client.login(DISCORD_TOKEN);
 
 // Utility functions for movement logic
 function calculateNewTile(currentTile, direction) {
+  if (!currentTile || currentTile.length < 2) return null; // Ensure valid tile format
+  
   const col = currentTile.charAt(0); // Letter (Column)
   const row = parseInt(currentTile.slice(1)); // Number (Row)
 
@@ -232,6 +234,7 @@ function calculateNewTile(currentTile, direction) {
   let newColIndex = colIndex;
   let newRow = row;
 
+  // Calculate new tile based on direction
   switch (direction) {
     case 'north': newRow -= 1; break;
     case 'south': newRow += 1; break;
@@ -240,15 +243,17 @@ function calculateNewTile(currentTile, direction) {
     default: return null; // Invalid direction
   }
 
+  // Ensure the new column is within bounds (A to E = col index 0 to 4)
+  if (newColIndex < 0 || newColIndex > 4) return null;
+
+  // Ensure the new row is within bounds (1 to 5)
+  if (newRow < 1 || newRow > 5) return null;
+
   const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex); // Convert back to column letter
 
-  // Ensure the move is within map bounds (A to E for columns, 1 to 5 for rows)
-  if (newRow < 1 || newRow > 5 || newColIndex < 0 || newColIndex > 4) {
-    return null;
-  }
-
-  return `${newCol}${newRow}`;
+  return `${newCol}${newRow}`; // Return the new tile
 }
+
 
 function isValidTile(tile) {
   return tile !== null;
