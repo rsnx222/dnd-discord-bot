@@ -4,6 +4,7 @@ const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBu
 const databaseHelper = require('../helpers/databaseHelper'); // Use the new database helper
 const { calculateNewTile } = require('../core/movementLogic'); // Import the movement logic
 const { generateEventMessage } = require('../core/storylineManager'); // Import the message generator
+const { generateMapImage } = require('../core/mapGenerator'); // Import the map generator
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -90,10 +91,14 @@ module.exports = {
       const tileData = await databaseHelper.getTileData(newTile);
 
       // Generate the event message
-      const eventMessage = tileData ? generateEventMessage(tileData) : 'You set up camp and rest up.';
+      const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
 
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
+
+      // Generate and send the map image
+      const teamData = await databaseHelper.getTeamData(); // Ensure up-to-date team data
+      const mapImagePath = await generateMapImage(teamData, false); // Pass false to show only the moving team's location
 
       // Fetch the team's channel ID
       const channelId = await databaseHelper.getTeamChannelId(teamName);
@@ -107,11 +112,12 @@ module.exports = {
         return;
       }
 
-      // Send the message to the team’s channel
+      // Send the message and map image to the team’s channel
       const channel = await interaction.client.channels.fetch(channelId);
 
       if (channel) {
         await channel.send(eventMessage);
+        await channel.send({ files: [mapImagePath] });
       }
 
       await interaction.update({
