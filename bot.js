@@ -135,12 +135,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     
       try {
         await interaction.deferReply({ ephemeral: true }); // Defer the reply early
-    
-        // Fetch the Teams sheet data
+        
+        // Fetch the Teams sheet data, including Columns A (Team), B (Current Location), and C (Explored Tiles)
         const teamSheet = await sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: 'Teams!A2:B', // Update range to include only Team and Current Location columns
+          range: 'Teams!A2:C', // Update range to include Columns A, B, and C
         });
+
     
         const teamData = teamSheet.data.values || [];
         
