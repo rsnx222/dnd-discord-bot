@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Events, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -75,7 +75,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     // Handle /moveteam command initiation
     if (interaction.isCommand() && interaction.commandName === 'moveteam') {
-      const teamSelectMenu = new SelectMenuBuilder()
+      const teamSelectMenu = new StringSelectMenuBuilder()
         .setCustomId('select_team')
         .setPlaceholder('Select a team')
         .addOptions(
