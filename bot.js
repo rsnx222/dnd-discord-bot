@@ -314,7 +314,10 @@ async function updateExploredTiles(teamSheet, teamName, newTile) {
   const teamRowIndex = teamData.findIndex(row => row[0] === teamName) + 2; // Find the row of the team
 
   // Fetch existing explored tiles (Column C)
-  const currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
+  let currentExploredTiles = teamData[teamRowIndex - 2][2] || ''; 
+
+  // Remove any leading or trailing commas/spaces just in case
+  currentExploredTiles = currentExploredTiles.trim().replace(/^,+|,+$/g, '');
 
   // Check if the new tile is already in the explored tiles
   const exploredTilesArray = currentExploredTiles ? currentExploredTiles.split(',') : []; // Split the existing tiles by comma, or start with an empty array
