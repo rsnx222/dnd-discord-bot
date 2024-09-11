@@ -22,5 +22,4 @@ function getTeamEmoji(teamName) {
 module.exports = {
   getTeamOptions,
   getTeamEmoji,
-  getTeamChannel, // Export the new function
 };
