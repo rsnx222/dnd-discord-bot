@@ -223,12 +223,23 @@ client.login(DISCORD_TOKEN);
 
 // Utility functions for movement logic
 function calculateNewTile(currentTile, direction) {
-  if (!currentTile || currentTile.length < 2) return null; // Ensure valid tile format
+  console.log(`Current Tile: ${currentTile}`);  // Log the current tile
+  console.log(`Direction: ${direction}`);  // Log the direction
+
+  if (!currentTile || currentTile.length < 2) {
+    console.error('Invalid current tile format');
+    return null;  // Ensure valid tile format
+  }
   
   const col = currentTile.charAt(0); // Letter (Column)
   const row = parseInt(currentTile.slice(1)); // Number (Row)
 
-  if (isNaN(row)) return null; // Ensure row is a number
+  console.log(`Parsed Column: ${col}, Parsed Row: ${row}`);  // Log parsed column and row
+
+  if (isNaN(row)) {
+    console.error('Row is not a number');
+    return null; // Ensure row is a number
+  }
 
   const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0); // Convert column letter to index (A = 0, B = 1, etc.)
   let newColIndex = colIndex;
@@ -240,19 +251,31 @@ function calculateNewTile(currentTile, direction) {
     case 'south': newRow += 1; break;
     case 'west': newColIndex -= 1; break;
     case 'east': newColIndex += 1; break;
-    default: return null; // Invalid direction
+    default: 
+      console.error('Invalid direction');
+      return null; // Invalid direction
   }
 
+  console.log(`New Column Index: ${newColIndex}, New Row: ${newRow}`);  // Log the new column index and row
+
   // Ensure the new column is within bounds (A to E = col index 0 to 4)
-  if (newColIndex < 0 || newColIndex > 4) return null;
+  if (newColIndex < 0 || newColIndex > 4) {
+    console.error('New column index out of bounds');
+    return null;
+  }
 
   // Ensure the new row is within bounds (1 to 5)
-  if (newRow < 1 || newRow > 5) return null;
+  if (newRow < 1 || newRow > 5) {
+    console.error('New row out of bounds');
+    return null;
+  }
 
   const newCol = String.fromCharCode('A'.charCodeAt(0) + newColIndex); // Convert back to column letter
 
+  console.log(`New Tile: ${newCol}${newRow}`);  // Log the final new tile
   return `${newCol}${newRow}`; // Return the new tile
 }
+
 
 
 function isValidTile(tile) {
