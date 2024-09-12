@@ -11,7 +11,7 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      await interaction.deferReply(); // Defer to ensure interaction validity
+      await interaction.deferReply({ ephemeral: true });
 
       const teamData = await databaseHelper.getTeamData();
 
@@ -42,7 +42,7 @@ module.exports = {
   async handleSelectMenu(interaction) {
     if (interaction.customId === 'select_team') {
       try {
-        await interaction.deferUpdate(); // Defer to ensure interaction validity
+        await interaction.deferUpdate();
 
         const selectedTeam = interaction.values[0];
 
@@ -129,5 +129,4 @@ module.exports = {
       }
     }
   }
-
 };
