@@ -88,6 +88,7 @@ module.exports = {
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
 
     try {
+      // Defer to ensure interaction validity
       await interaction.deferReply({ ephemeral: true });
 
       const teamData = await databaseHelper.getTeamData();
@@ -113,18 +114,19 @@ module.exports = {
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
-      // Update the explored tiles list (no duplicates)
+      // Update the explored tiles list (ensure no duplicates)
       const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
       await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
 
-      // Update the team's current location in the filteredTeamData directly
-      const filteredTeamData = teamData.filter(team => team.teamName === teamName);
+      // Update the team's current location and explored tiles in the local teamData
+      const filteredTeamData = teamData.filter(t => t.teamName === teamName);
       if (filteredTeamData.length > 0) {
-        filteredTeamData[0].currentLocation = newTile;
+        filteredTeamData[0].currentLocation = newTile;  // Update current location
+        filteredTeamData[0].exploredTiles = updatedExploredTiles;  // Update explored tiles
       }
 
-      // Generate the map image for the selected team only
-      const mapImagePath = await generateMapImage(filteredTeamData, false);
+      // Now generate the map image for the selected team only
+      const mapImagePath = await generateMapImage(filteredTeamData, false);  // Pass false to show only this team's tiles
 
       const channelId = await databaseHelper.getTeamChannelId(teamName);
 
@@ -155,4 +157,5 @@ module.exports = {
       }
     }
   }
+
 };
