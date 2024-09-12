@@ -96,14 +96,16 @@ module.exports = {
       const tileData = await databaseHelper.getTileData(newTile);
       const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
 
-      // Update the team's location in the database before generating the map
+      // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
-      // Generate the map image for the selected team only
+      // Update the team's current location in the filteredTeamData directly
       const filteredTeamData = teamData.filter(team => team.teamName === teamName);
-      console.log('--------------')
-      console.log(filteredTeamData)
-      console.log('--------------')
+      if (filteredTeamData.length > 0) {
+        filteredTeamData[0].currentLocation = newTile; // Update currentLocation to the newTile
+      }
+
+      // Generate the map image for the selected team only
       const mapImagePath = await generateMapImage(filteredTeamData, false); // Pass false to show only this team's tiles
 
       const channelId = await databaseHelper.getTeamChannelId(teamName);
