@@ -1,8 +1,5 @@
-// resetallpositions.js
-
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const teamManager = require('../helpers/teamManager');
 const { isAdmin } = require('../helpers/permissionHelper');
 
 module.exports = {
@@ -15,30 +12,42 @@ module.exports = {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    // Create a modal for confirmation
+    const modal = new ModalBuilder()
+      .setCustomId('reset_all_teams_modal')
+      .setTitle('Confirm Reset All Teams');
 
-    const confirmationMessage = await interaction.editReply({
-      content: 'Are you sure you want to reset all team positions and explored tiles to A3? Type \'confirm\' to proceed.',
-    });
+    const textInput = new TextInputBuilder()
+      .setCustomId('confirm_reset_all')
+      .setLabel(`Type 'confirm' to reset all teams to A3`)
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
 
-    const filter = response => response.user.id === interaction.user.id && response.content.toLowerCase() === 'confirm';
-    const collector = confirmationMessage.channel.createMessageCollector({ filter, time: 10000 });
+    const actionRow = new ActionRowBuilder().addComponents(textInput);
+    modal.addComponents(actionRow);
 
-    collector.on('collect', async () => {
-      const teamData = await databaseHelper.getTeamData();
+    // Show the modal to the user
+    await interaction.showModal(modal);
+  },
 
-      for (const team of teamData) {
-        await databaseHelper.updateTeamLocation(team.teamName, 'A3');
-        await databaseHelper.updateExploredTiles(team.teamName, ['A3']);
+  async handleModal(interaction) {
+    if (interaction.customId === 'reset_all_teams_modal') {
+      const confirmationText = interaction.fields.getTextInputValue('confirm_reset_all');
+
+      // Check if the entered text is 'confirm'
+      if (confirmationText.toLowerCase() === 'confirm') {
+        const teamData = await databaseHelper.getTeamData();
+
+        // Reset all teams to A3 and set explored tiles to ['A3']
+        for (const team of teamData) {
+          await databaseHelper.updateTeamLocation(team.teamName, 'A3');
+          await databaseHelper.updateExploredTiles(team.teamName, ['A3']);
+        }
+
+        await interaction.reply({ content: 'All teams have been reset to A3 with only A3 as explored.', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
       }
-
-      await interaction.editReply({ content: 'All teams have been reset to A3 with only A3 as explored.' });
-    });
-
-    collector.on('end', collected => {
-      if (collected.size === 0) {
-        interaction.editReply({ content: 'Command canceled: No confirmation received.', ephemeral: true });
-      }
-    });
+    }
   }
 };

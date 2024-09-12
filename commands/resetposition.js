@@ -1,6 +1,4 @@
-// resetposition.js
-
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
 const { isAdmin } = require('../helpers/permissionHelper');
@@ -22,26 +20,38 @@ module.exports = {
 
     const selectedTeam = interaction.options.getString('team');
 
-    await interaction.deferReply({ ephemeral: true });
+    // Create a modal for confirmation
+    const modal = new ModalBuilder()
+      .setCustomId('reset_team_modal')
+      .setTitle('Confirm Reset');
 
-    const confirmationMessage = await interaction.editReply({
-      content: `Are you sure you want to reset ${selectedTeam}'s position and explored tiles? Type 'confirm' to proceed.`,
-    });
+    const textInput = new TextInputBuilder()
+      .setCustomId('confirm_team_name')
+      .setLabel(`Type the team name (${selectedTeam}) to confirm:`)
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
 
-    const filter = response => response.user.id === interaction.user.id && response.content.toLowerCase() === 'confirm';
-    const collector = confirmationMessage.channel.createMessageCollector({ filter, time: 10000 });
+    const actionRow = new ActionRowBuilder().addComponents(textInput);
+    modal.addComponents(actionRow);
 
-    collector.on('collect', async () => {
-      await databaseHelper.updateTeamLocation(selectedTeam, 'A3');
-      await databaseHelper.updateExploredTiles(selectedTeam, ['A3']);
+    // Show the modal to the user
+    await interaction.showModal(modal);
+  },
 
-      await interaction.editReply({ content: `${selectedTeam} has been reset to A3 with only A3 as explored.` });
-    });
+  async handleModal(interaction) {
+    if (interaction.customId === 'reset_team_modal') {
+      const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
+      const selectedTeam = interaction.message.content.match(/Team to reset: (.+?)\./)[1];
 
-    collector.on('end', collected => {
-      if (collected.size === 0) {
-        interaction.editReply({ content: 'Command canceled: No confirmation received.', ephemeral: true });
+      // Check if the entered team name matches the selected one
+      if (enteredTeamName === selectedTeam) {
+        await databaseHelper.updateTeamLocation(selectedTeam, 'A3');
+        await databaseHelper.updateExploredTiles(selectedTeam, ['A3']);
+
+        await interaction.reply({ content: `${selectedTeam} has been reset to A3 with only A3 as explored.`, ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
-    });
+    }
   }
 };

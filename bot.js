@@ -80,6 +80,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
   }
+  
+  // Handle modal interaction (for confirmation in resetposition and resetallpositions)
+  else if (interaction.isModalSubmit()) {
+    const command = client.commands.get('resetposition') || client.commands.get('resetallpositions');
+
+    if (command && typeof command.handleModal === 'function') {
+      try {
+        await command.handleModal(interaction);
+      } catch (error) {
+        logger.error('Error handling modal interaction:', error);
+        await interaction.reply({ content: 'Failed to handle the confirmation modal.', ephemeral: true });
+      }
+    }
+  }
 });
 
 // Login the bot

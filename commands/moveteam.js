@@ -7,14 +7,26 @@ const { generateMapImage } = require('../core/mapGenerator');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('moveteam')
-    .setDescription('Move a team by selecting a direction'),
+    .setDescription('Move a team by selecting a direction')
+    .addStringOption(option =>
+      option.setName('team')
+        .setDescription('Optional: Select a team to move')
+        .setRequired(false)
+    ),
 
   async execute(interaction) {
     try {
       await interaction.deferReply({ ephemeral: true });
 
       const teamData = await databaseHelper.getTeamData();
+      const selectedTeam = interaction.options.getString('team');
 
+      if (selectedTeam) {
+        // Team is already selected from dropdown, proceed with direction selection
+        return this.showDirectionSelection(interaction, selectedTeam);
+      }
+
+      // If no team is selected, show the dropdown menu
       const teamSelectMenu = new StringSelectMenuBuilder()
         .setCustomId('select_team')
         .setPlaceholder('Select a team')
@@ -43,20 +55,9 @@ module.exports = {
     if (interaction.customId === 'select_team') {
       try {
         await interaction.deferUpdate();
-
         const selectedTeam = interaction.values[0];
 
-        const directionButtons = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-          new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-          new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-          new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
-        );
-
-        await interaction.editReply({
-          content: `You selected ${selectedTeam}. Now choose the direction:`,
-          components: [directionButtons],
-        });
+        return this.showDirectionSelection(interaction, selectedTeam);
       } catch (error) {
         console.error('Error handling select menu:', error);
         if (!interaction.replied) {
@@ -68,12 +69,25 @@ module.exports = {
     }
   },
 
+  async showDirectionSelection(interaction, selectedTeam) {
+    const directionButtons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+    );
+
+    await interaction.editReply({
+      content: `You selected ${selectedTeam}. Now choose the direction:`,
+      components: [directionButtons],
+    });
+  },
+
   async handleButton(interaction) {
     const direction = interaction.customId;
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
 
     try {
-      // Defer to ensure interaction validity
       await interaction.deferReply({ ephemeral: true });
 
       const teamData = await databaseHelper.getTeamData();
@@ -100,17 +114,17 @@ module.exports = {
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
       // Update the explored tiles list (no duplicates)
-      const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];  // Ensure no duplicates
+      const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
       await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
 
       // Update the team's current location in the filteredTeamData directly
       const filteredTeamData = teamData.filter(team => team.teamName === teamName);
       if (filteredTeamData.length > 0) {
-        filteredTeamData[0].currentLocation = newTile; // Update currentLocation to the newTile
+        filteredTeamData[0].currentLocation = newTile;
       }
 
       // Generate the map image for the selected team only
-      const mapImagePath = await generateMapImage(filteredTeamData, false); // Pass false to show only this team's tiles
+      const mapImagePath = await generateMapImage(filteredTeamData, false);
 
       const channelId = await databaseHelper.getTeamChannelId(teamName);
 
