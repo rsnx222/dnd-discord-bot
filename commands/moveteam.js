@@ -101,6 +101,9 @@ module.exports = {
 
       // Generate the map image for the selected team only
       const filteredTeamData = teamData.filter(team => team.teamName === teamName);
+      console.log('--------------')
+      console.log(filteredTeamData)
+      console.log('--------------')
       const mapImagePath = await generateMapImage(filteredTeamData, false); // Pass false to show only this team's tiles
 
       const channelId = await databaseHelper.getTeamChannelId(teamName);
