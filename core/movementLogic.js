@@ -20,18 +20,18 @@ function calculateNewTile(currentTile, direction) {
   let newRow = row;
 
   switch (direction.toLowerCase()) { // Handling case-insensitive direction input
-    case 'north': newRow -= 1; break;
-    case 'south': newRow += 1; break;
-    case 'west': newColIndex -= 1; break;
-    case 'east': newColIndex += 1; break;
+    case 'north': newRow -= 1; break; // Move up (reduce row)
+    case 'south': newRow += 1; break; // Move down (increase row)
+    case 'west': newColIndex -= 1; break; // Move left (reduce column)
+    case 'east': newColIndex += 1; break; // Move right (increase column)
     default: 
       console.error('Invalid direction');
       return null;
   }
 
   // Define boundaries of the map (e.g., A-F columns and 1-10 rows)
-  const MIN_COL_INDEX = 0;
-  const MAX_COL_INDEX = 5;
+  const MIN_COL_INDEX = 0; // Corresponds to 'A'
+  const MAX_COL_INDEX = 5; // Corresponds to 'F'
   const MIN_ROW = 1;
   const MAX_ROW = 10;
 

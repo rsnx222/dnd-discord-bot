@@ -73,7 +73,8 @@ module.exports = {
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
 
     try {
-      await interaction.deferReply(); // Defer to ensure interaction validity
+      // Defer to ensure interaction validity
+      await interaction.deferReply({ ephemeral: true });
 
       const teamData = await databaseHelper.getTeamData();
       const team = teamData.find(t => t.teamName === teamName);
@@ -116,7 +117,7 @@ module.exports = {
       }
 
       await interaction.editReply({
-        content: `Team ${teamName} moved ${direction} to ${newTile}.`,
+        content: `Team ${teamName} moved ${direction} to ${newTile}. The update has been posted to the team's channel.`,
       });
 
     } catch (error) {
@@ -128,4 +129,5 @@ module.exports = {
       }
     }
   }
+
 };
