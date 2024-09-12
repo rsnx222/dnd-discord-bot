@@ -20,10 +20,10 @@ function calculateNewTile(currentTile, direction) {
   let newRow = row;
 
   switch (direction.toLowerCase()) { // Handling case-insensitive direction input
-    case 'north': newRow -= 1; break; // Move up (reduce row)
-    case 'south': newRow += 1; break; // Move down (increase row)
-    case 'west': newColIndex -= 1; break; // Move left (reduce column)
-    case 'east': newColIndex += 1; break; // Move right (increase column)
+    case 'north': newRow -= 1; break; // Move north (up)
+    case 'south': newRow += 1; break; // Move south (down)
+    case 'west': newColIndex -= 1; break; // Move west (left)
+    case 'east': newColIndex += 1; break; // Move east (right)
     default: 
       console.error('Invalid direction');
       return null;

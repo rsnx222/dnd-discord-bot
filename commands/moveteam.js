@@ -71,6 +71,7 @@ module.exports = {
   async handleButton(interaction) {
     const direction = interaction.customId;
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
+    console.log(`/moveteam: ${direction} for team ${teamName}`)
 
     try {
       // Defer to ensure interaction validity
