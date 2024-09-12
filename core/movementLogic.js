@@ -16,20 +16,20 @@ function calculateNewTile(currentTile, direction) {
   }
 
   const colIndex = col.charCodeAt(0) - 'A'.charCodeAt(0); // Convert letter to index (A=0, B=1, etc.)
-  let newCol = colIndex;
+  let newColIndex = colIndex;
   let newRow = row;
 
   switch (direction.toLowerCase()) { // Handling case-insensitive direction input
     case 'north': newRow -= 1; break; // Move north (up)
     case 'south': newRow += 1; break; // Move south (down)
-    case 'west': newCol -= 1; break; // Move west (left)
-    case 'east': newCol += 1; break; // Move east (right)
+    case 'west': newColIndex -= 1; break; // Move west (left)
+    case 'east': newColIndex += 1; break; // Move east (right)
     default: 
       console.error('Invalid direction');
       return null;
   }
 
-  console.log(`Moving from col ${col}, row ${row} to col ${newCol}, row ${newRow}`)
+  console.log(`Moving from col ${col}, row ${row} to col ${String.fromCharCode('A'.charCodeAt(0) + newColIndex)}, row ${newRow}`);
 
   // Define boundaries of the map (e.g., A-F columns and 1-10 rows)
   const MIN_COL_INDEX = 0; // Corresponds to 'A'
@@ -37,13 +37,13 @@ function calculateNewTile(currentTile, direction) {
   const MIN_ROW = 1;
   const MAX_ROW = 10;
 
-  if (newCol < MIN_COL_INDEX || newCol > MAX_COL_INDEX || newRow < MIN_ROW || newRow > MAX_ROW) {
+  if (newColIndex < MIN_COL_INDEX || newColIndex > MAX_COL_INDEX || newRow < MIN_ROW || newRow > MAX_ROW) {
     console.error('New position is out of bounds');
     return null;
   }
 
   // Convert column index back to a letter (A=0, B=1, etc.)
-  const newColLetter = String.fromCharCode('A'.charCodeAt(0) + newCol);
+  const newColLetter = String.fromCharCode('A'.charCodeAt(0) + newColIndex);
 
   console.log(`Final position: ${newColLetter}${newRow}`)
   return `${newColLetter}${newRow}`; // Return the new tile (e.g., 'C7')
