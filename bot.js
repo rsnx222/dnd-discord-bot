@@ -53,9 +53,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // Handle select menu interaction (e.g., for team selection in moveteam)
+  // Handle select menu interaction (for team selection in moveteam or resetposition)
   else if (interaction.isStringSelectMenu()) {
-    const command = client.commands.get('moveteam'); // Ensure the interaction is for moveteam
+    const command = client.commands.get('moveteam') || client.commands.get('resetposition');
 
     if (command && typeof command.handleSelectMenu === 'function') {
       try {
@@ -69,7 +69,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // Handle button interaction (e.g., for directional movement in moveteam)
   else if (interaction.isButton()) {
-    const command = client.commands.get('moveteam'); // Ensure the interaction is for moveteam
+    const command = client.commands.get('moveteam');
 
     if (command && typeof command.handleButton === 'function') {
       try {
