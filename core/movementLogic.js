@@ -43,10 +43,10 @@ function calculateNewTile(currentTile, direction) {
   }
 
   // Convert column index back to a letter (A=0, B=1, etc.)
-  const newCol = String.fromCharCode('A'.charCodeAt(0) + newCol);
+  const newColLetter = String.fromCharCode('A'.charCodeAt(0) + newCol);
 
-  console.log(`Final position: ${newCol}${newRow}`)
-  return `${newCol}${newRow}`; // Return the new tile (e.g., 'C7')
+  console.log(`Final position: ${newColLetter}${newRow}`)
+  return `${newColLetter}${newRow}`; // Return the new tile (e.g., 'C7')
 }
 
 // Function to check if the tile is valid
