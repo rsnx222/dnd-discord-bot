@@ -22,9 +22,11 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
       let tileImageURL;
 
-      if (showAllTeams) {
-        tileImageURL = `${settings.MapTileSourceURL}${imageName}`;
+      if (showAllTeams || teamData.length === 0) {
+        // If showing all teams or no team data (like in /showexploredmap), show explored tiles
+        tileImageURL = `${settings.MapTileExploredSourceURL}${imageName}`;
       } else if (teamData.some(team => team.exploredTiles.includes(tile))) {
+        // Show explored tiles for specific teams
         tileImageURL = `${settings.MapTileExploredSourceURL}${imageName}`;
       } else {
         tileImageURL = `${settings.MapTileSourceURL}${imageName}`;
@@ -36,63 +38,67 @@ async function generateMapImage(teamData, showAllTeams = true) {
         ctx.strokeRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
 
         if (teamData.some(team => team.exploredTiles.includes(tile))) {
-          ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';  // Semi-transparent green
+          // Apply faint green overlay for explored tiles (for team-specific maps)
+          ctx.fillStyle = 'rgba(0, 255, 0, 0.15)';  // Semi-transparent green
           ctx.fillRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
         }
-        
+
       } catch (error) {
         console.error(`Error loading image from URL: ${tileImageURL}`, error);
       }
     }
   }
 
-  const teamsGroupedByLocation = teamData.reduce((acc, team) => {
-    const { currentLocation } = team;
-    if (!acc[currentLocation]) {
-      acc[currentLocation] = [];
-    }
-    acc[currentLocation].push(team);
-    return acc;
-  }, {});
+  // Only place team icons if we are showing team locations (i.e., not in /showexploredmap)
+  if (showAllTeams) {
+    const teamsGroupedByLocation = teamData.reduce((acc, team) => {
+      const { currentLocation } = team;
+      if (!acc[currentLocation]) {
+        acc[currentLocation] = [];
+      }
+      acc[currentLocation].push(team);
+      return acc;
+    }, {});
 
-  for (const [location, teamsOnSameTile] of Object.entries(teamsGroupedByLocation)) {
-    const [baseX, baseY] = getCoordinatesFromTile(location, tileWidth, tileHeight);
+    for (const [location, teamsOnSameTile] of Object.entries(teamsGroupedByLocation)) {
+      const [baseX, baseY] = getCoordinatesFromTile(location, tileWidth, tileHeight);
 
-    console.log(`Rendering teams at ${location}: X=${baseX}, Y=${baseY}`); // Add logging to debug
+      console.log(`Rendering teams at ${location}: X=${baseX}, Y=${baseY}`);
 
-    const iconSpacing = 10;
-    const iconRadius = 16;
+      const iconSpacing = 10;
+      const iconRadius = 16;
 
-    const totalTeams = teamsOnSameTile.length;
-    const angleStep = (2 * Math.PI) / totalTeams;
+      const totalTeams = teamsOnSameTile.length;
+      const angleStep = (2 * Math.PI) / totalTeams;
 
-    for (let i = 0; i < totalTeams; i++) {
-      const team = teamsOnSameTile[i];
-      const angle = i * angleStep;
+      for (let i = 0; i < totalTeams; i++) {
+        const team = teamsOnSameTile[i];
+        const angle = i * angleStep;
 
-      const offsetX = Math.cos(angle) * iconSpacing;
-      const offsetY = Math.sin(angle) * iconSpacing;
+        const offsetX = Math.cos(angle) * iconSpacing;
+        const offsetY = Math.sin(angle) * iconSpacing;
 
-      const iconX = baseX - iconRadius / 2 + offsetX;
-      const iconY = baseY - iconRadius / 2 + offsetY;
+        const iconX = baseX - iconRadius / 2 + offsetX;
+        const iconY = baseY - iconRadius / 2 + offsetY;
 
-      const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png`;
+        const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png`;
 
-      console.log(`Placing icon for team ${team.teamName} at X=${iconX}, Y=${iconY}`); // Add logging to debug
+        console.log(`Placing icon for team ${team.teamName} at X=${iconX}, Y=${iconY}`);
 
-      try {
-        const iconImage = await loadImage(teamIconURL);
-        ctx.drawImage(iconImage, iconX, iconY, 32, 32);
-      } catch (error) {
-        console.error(`Error loading team icon: ${teamIconURL}, using default icon instead`);
-
-        // Use default icon if specific team icon is not found
-        const defaultIconURL = `${settings.teamIconBaseURL}Black.png`;
         try {
-          const defaultIcon = await loadImage(defaultIconURL);
-          ctx.drawImage(defaultIcon, iconX, iconY, 32, 32);
-        } catch (defaultIconError) {
-          console.error(`Error loading default icon: ${defaultIconURL}`, defaultIconError);
+          const iconImage = await loadImage(teamIconURL);
+          ctx.drawImage(iconImage, iconX, iconY, 32, 32);
+        } catch (error) {
+          console.error(`Error loading team icon: ${teamIconURL}, using default icon instead`);
+
+          // Use default icon if specific team icon is not found
+          const defaultIconURL = `${settings.teamIconBaseURL}Black.png`;
+          try {
+            const defaultIcon = await loadImage(defaultIconURL);
+            ctx.drawImage(defaultIcon, iconX, iconY, 32, 32);
+          } catch (defaultIconError) {
+            console.error(`Error loading default icon: ${defaultIconURL}`, defaultIconError);
+          }
         }
       }
     }
@@ -120,7 +126,7 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
     const x = (col - 1) * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
 
-    console.log(`Converting tile ${tile} to X=${x}, Y=${y}`); // Add logging to debug
+    console.log(`Converting tile ${tile} to X=${x}, Y=${y}`);
 
     return [x, y];
   }
