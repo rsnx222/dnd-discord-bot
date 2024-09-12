@@ -40,12 +40,14 @@ module.exports = {
         let rowTiles = '';
         for (let col of columns) {
           const tileName = `${col}${row}`;
+          const paddedTileName = row < 10 ? `${col} ${row}` : `${col}${row}`; // Add extra space for rows 1-9
+          
           if (exploredTiles.includes(tileName)) {
             // Explored tile -> highlight with []
-            rowTiles += `[${tileName}] `;
+            rowTiles += `[${paddedTileName}] `;
           } else {
             // Unexplored tile
-            rowTiles += `${tileName}   `;
+            rowTiles += `${paddedTileName}   `;
           }
         }
         grid += rowTiles.trim() + '\n'; // Append the row to the grid
