@@ -99,6 +99,10 @@ module.exports = {
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
 
+      // Update the explored tiles list (no duplicates)
+      const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];  // Ensure no duplicates
+      await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
+
       // Update the team's current location in the filteredTeamData directly
       const filteredTeamData = teamData.filter(team => team.teamName === teamName);
       if (filteredTeamData.length > 0) {
