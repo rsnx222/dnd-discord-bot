@@ -66,9 +66,10 @@ async function updateTeamLocation(teamName, newLocation) {
 async function updateExploredTiles(teamName, newTiles) {
   try {
     const connection = await getDBConnection();
+    const newTilesString = newTiles.join(',');  // Ensure it's a comma-separated string
     await connection.execute(
-      'UPDATE teams SET explored_tiles = ? WHERE team_name = ?', 
-      [newTiles, teamName]
+      'UPDATE teams SET explored_tiles = ? WHERE team_name = ?',
+      [newTilesString, teamName]
     );
   } catch (error) {
     console.error('Error updating explored tiles in the database:', error);
