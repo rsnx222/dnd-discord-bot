@@ -1,5 +1,3 @@
-// mapGenerator.js
-
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const settings = require('../config/settings');
@@ -36,6 +34,12 @@ async function generateMapImage(teamData, showAllTeams = true) {
         const tileImage = await loadImage(tileImageURL);
         ctx.drawImage(tileImage, (col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
         ctx.strokeRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
+
+        if (teamData.some(team => team.exploredTiles.includes(tile))) {
+          ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';  // Semi-transparent green
+          ctx.fillRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
+        }
+        
       } catch (error) {
         console.error(`Error loading image from URL: ${tileImageURL}`, error);
       }
