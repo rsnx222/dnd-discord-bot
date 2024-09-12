@@ -11,6 +11,8 @@ module.exports = {
 
   async execute(interaction) {
     try {
+      await interaction.deferReply(); // Defer to ensure interaction validity
+
       const teamData = await databaseHelper.getTeamData();
 
       const teamSelectMenu = new StringSelectMenuBuilder()
@@ -23,17 +25,15 @@ module.exports = {
 
       const row = new ActionRowBuilder().addComponents(teamSelectMenu);
 
-      await interaction.reply({
+      await interaction.editReply({
         content: 'Select a team to move:',
         components: [row],
-        ephemeral: true,
       });
     } catch (error) {
       console.error('Error generating team select menu:', error);
       if (!interaction.replied) {
-        await interaction.reply({
+        await interaction.editReply({
           content: 'Failed to load teams. Please try again later.',
-          ephemeral: true,
         });
       }
     }
@@ -41,27 +41,27 @@ module.exports = {
 
   async handleSelectMenu(interaction) {
     if (interaction.customId === 'select_team') {
-      const selectedTeam = interaction.values[0];
-
-      const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
-      );
-
       try {
-        await interaction.update({
+        await interaction.deferUpdate(); // Defer to ensure interaction validity
+
+        const selectedTeam = interaction.values[0];
+
+        const directionButtons = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        );
+
+        await interaction.editReply({
           content: `You selected ${selectedTeam}. Now choose the direction:`,
           components: [directionButtons],
-          ephemeral: true,
         });
       } catch (error) {
         console.error('Error handling select menu:', error);
         if (!interaction.replied) {
-          await interaction.reply({
+          await interaction.editReply({
             content: 'Failed to handle selection. Please try again later.',
-            ephemeral: true,
           });
         }
       }
@@ -73,6 +73,8 @@ module.exports = {
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
 
     try {
+      await interaction.deferReply(); // Defer to ensure interaction validity
+
       const teamData = await databaseHelper.getTeamData();
       const team = teamData.find(t => t.teamName === teamName);
 
@@ -84,9 +86,8 @@ module.exports = {
       const newTile = calculateNewTile(currentLocation, direction);
 
       if (!newTile) {
-        await interaction.reply({
+        await interaction.editReply({
           content: 'Invalid move. The team cannot move in that direction.',
-          ephemeral: true,
         });
         return;
       }
@@ -101,9 +102,8 @@ module.exports = {
       const channelId = await databaseHelper.getTeamChannelId(teamName);
 
       if (!channelId) {
-        await interaction.reply({
+        await interaction.editReply({
           content: 'Failed to find the team’s channel. Please contact the event organizer.',
-          ephemeral: true,
         });
         return;
       }
@@ -115,17 +115,15 @@ module.exports = {
         await channel.send({ files: [mapImagePath] });
       }
 
-      await interaction.reply({
+      await interaction.editReply({
         content: `Team ${teamName} moved ${direction} to ${newTile}.`,
-        ephemeral: true,
       });
 
     } catch (error) {
       console.error(`Error moving team ${teamName}:`, error);
       if (!interaction.replied) {
-        await interaction.reply({
+        await interaction.editReply({
           content: 'Failed to move the team. Please try again later.',
-          ephemeral: true,
         });
       }
     }
