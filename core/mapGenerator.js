@@ -54,6 +54,8 @@ async function generateMapImage(teamData, showAllTeams = true) {
   for (const [location, teamsOnSameTile] of Object.entries(teamsGroupedByLocation)) {
     const [baseX, baseY] = getCoordinatesFromTile(location, tileWidth, tileHeight);
 
+    console.log(`Rendering teams at ${location}: X=${baseX}, Y=${baseY}`); // Add logging to debug
+
     const iconSpacing = 10;
     const iconRadius = 16;
 
@@ -71,6 +73,8 @@ async function generateMapImage(teamData, showAllTeams = true) {
       const iconY = baseY - iconRadius / 2 + offsetY;
 
       const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png`;
+
+      console.log(`Placing icon for team ${team.teamName} at X=${iconX}, Y=${iconY}`); // Add logging to debug
 
       try {
         const iconImage = await loadImage(teamIconURL);
@@ -111,6 +115,8 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
 
     const x = (col - 1) * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
+
+    console.log(`Converting tile ${tile} to X=${x}, Y=${y}`); // Add logging to debug
 
     return [x, y];
   }
