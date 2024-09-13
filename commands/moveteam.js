@@ -69,16 +69,19 @@ module.exports = {
         });
       }
 
-      const tileData = await databaseHelper.getTileData(newTile);
-      const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
-
+      // **Ensure team data is updated first, then generate map**
       await databaseHelper.updateTeamLocation(selectedTeam, newTile);
-
       const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
       await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
-      const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-      const mapImagePath = await generateMapImage(filteredTeamData, false);
+      const teamDataUpdated = await databaseHelper.getTeamData();  // Get the updated team data
+      const filteredTeamData = teamDataUpdated.filter(t => t.teamName === selectedTeam);
+
+      const mapImagePath = await generateMapImage(filteredTeamData, false);  // Generate map after data update
+      const tileData = await databaseHelper.getTileData(newTile);
+      const eventMessage = tileData
+        ? generateEventMessage(tileData)
+        : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
 
       const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
       const channel = await interaction.client.channels.fetch(channelId);

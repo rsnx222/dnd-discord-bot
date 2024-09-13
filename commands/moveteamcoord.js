@@ -55,18 +55,19 @@ module.exports = {
         throw new Error(`Could not find team data for ${selectedTeam}`);
       }
 
+      // **Ensure team data is updated first, then generate map**
+      await databaseHelper.updateTeamLocation(selectedTeam, enteredTile);
+      const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
+      await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
+
+      const teamDataUpdated = await databaseHelper.getTeamData();  // Get the updated team data
+      const filteredTeamData = teamDataUpdated.filter(t => t.teamName === selectedTeam);
+
+      const mapImagePath = await generateMapImage(filteredTeamData, false);  // Generate map after data update
       const tileData = await databaseHelper.getTileData(enteredTile);
       const eventMessage = tileData
         ? generateEventMessage(tileData)
         : `Your team has moved to ${enteredTile}. There doesn't seem to be anything unusual here.`;
-
-      await databaseHelper.updateTeamLocation(selectedTeam, enteredTile);
-
-      const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
-      await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
-
-      const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-      const mapImagePath = await generateMapImage(filteredTeamData, false);
 
       const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
       const channel = await interaction.client.channels.fetch(channelId);
