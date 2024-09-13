@@ -16,9 +16,11 @@ async function registerCommands(DISCORD_CLIENT_ID, guildId) {
 
     const commands = commandFiles.flatMap(file => {
       const command = require(`../commands/${file}`);
+      console.log(`Registering command(s) from: ${file}`);
 
       // Check if the file exports multiple commands or a single command
       if (Array.isArray(command.data)) {
+        console.log(`Command array found in: ${file}`);
         return command.data.map(cmd => cmd.toJSON()); // If multiple commands, map over them
       } else {
         return command.data.toJSON(); // If single, return it directly
