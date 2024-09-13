@@ -40,7 +40,8 @@ client.once(Events.ClientReady, async () => {
 
   // Clear old commands and register the current ones from the /commands directory
   await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-  await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId, client.commands);
+  await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+  await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
 });
 
 // Handle interactions

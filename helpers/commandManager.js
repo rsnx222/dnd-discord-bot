@@ -67,8 +67,23 @@ async function deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId) {
   }
 }
 
+async function deleteAllGlobalCommands(DISCORD_CLIENT_ID) {
+  try {
+    console.log('Deleting all global commands...');
+    const commands = await rest.get(Routes.applicationCommands(DISCORD_CLIENT_ID));
+
+    for (const command of commands) {
+      await rest.delete(Routes.applicationCommand(DISCORD_CLIENT_ID, command.id));
+      console.log(`Deleted global command: ${command.name}`);
+    }
+  } catch (error) {
+    console.error('Error deleting global commands:', error);
+  }
+}
+
 module.exports = {
   registerCommands,
   fetchCommands,
   deleteAllGuildCommands,
+  deleteAllGlobalCommands,
 };
