@@ -2,6 +2,7 @@
 
 const mysql = require('mysql2/promise');
 const settings = require('../config/settings');
+const tiles = require('../config/tiles');
 
 // Setup MySQL connection using environment variables
 async function getDBConnection() {
@@ -77,29 +78,21 @@ async function updateExploredTiles(teamName, newTiles) {
   }
 }
 
-// Fetch tile data from the database
-async function getTileData(tileName) {
-  try {
-    const connection = await getDBConnection();
-    const [rows] = await connection.execute('SELECT * FROM tiles WHERE tile_name = ?', [tileName]);
-
-    if (rows.length === 0) {
-      // Return null or a default object if no data is found
-      return null;
-    }
-
-    return rows[0];
-
-  } catch (error) {
-    console.error('Error fetching tile data from database:', error);
-    throw error;
+// Function to fetch tile data from tiles.js
+function getTileData(tileName) {
+  const tileData = tiles.tiles[tileName];
+  if (!tileData) {
+    console.error(`No data found for tile ${tileName}`);
+    return null;  // Return null if tile does not exist
   }
+  return tileData;
 }
+
 
 // Export functions for use in bot.js
 module.exports = {
   getTeamData,
-  getTeamChannelId,  // Add this function to the export
+  getTeamChannelId,
   updateTeamLocation,
   updateExploredTiles,
   getTileData
