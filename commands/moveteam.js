@@ -20,6 +20,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // Check if the user is a helper
     if (!isHelper(interaction.member)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -29,9 +30,10 @@ module.exports = {
 
       const selectedTeam = interaction.options.getString('team');
 
+      // Present options for moving by direction or entering a tile coordinate
       const movementOptions = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`move_by_direction_${selectedTeam}`).setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`enter_tile_${selectedTeam}`).setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`move_by_direction|${selectedTeam}`).setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`enter_tile|${selectedTeam}`).setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
       );
 
       await interaction.editReply({
@@ -45,14 +47,14 @@ module.exports = {
   },
 
   async handleButton(interaction) {
-    const [action, selectedTeam] = interaction.customId.split('_').slice(-2);
+    const [action, selectedTeam] = interaction.customId.split('|');
 
     if (action === 'move_by_direction') {
       const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`north_${selectedTeam}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`south_${selectedTeam}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`west_${selectedTeam}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`east_${selectedTeam}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        new ButtonBuilder().setCustomId(`north|${selectedTeam}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`south|${selectedTeam}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`west|${selectedTeam}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`east|${selectedTeam}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
       );
 
       return interaction.update({
@@ -115,7 +117,7 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    const selectedTeam = interaction.customId.split('_').pop();
+    const selectedTeam = interaction.customId.split('|').pop();
 
     if (interaction.customId.startsWith('enter_tile')) {
       const enteredTile = interaction.fields.getTextInputValue('tile_coordinate').toUpperCase();
