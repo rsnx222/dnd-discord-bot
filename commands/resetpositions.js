@@ -42,6 +42,8 @@ module.exports = {
   },
 
   async handleModal(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
     // Modal for resetting a specific team
     if (interaction.customId.startsWith('reset_team_modal_')) {
       const selectedTeam = interaction.customId.split('_').pop();  // Extract the team name
@@ -49,6 +51,7 @@ module.exports = {
 
       // Check if the entered team name matches the selected one
       if (enteredTeamName === selectedTeam) {
+        // Update the team's location and explored tiles
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
 
@@ -63,7 +66,7 @@ module.exports = {
           const channel = await interaction.client.channels.fetch(channelId);
 
           if (channel) {
-            // Send the cryptic, fun, welcoming message
+            // Send the cryptic, fun, welcoming message after the map is updated
             const welcomeMessage = `
               Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
               You find a crumpled note on the ground - you can barely make out the sentence:
@@ -78,6 +81,7 @@ module.exports = {
           }
         }
 
+        // Respond to the user once everything is completed
         await interaction.followUp({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
         await interaction.followUp({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
@@ -96,7 +100,7 @@ module.exports = {
           await databaseHelper.updateTeamLocation(team.teamName, 'A5');
           await databaseHelper.updateExploredTiles(team.teamName, ['A5']);
 
-          // Generate the map for each team and send the message in their channel
+          // Generate the map for each team after the location is updated
           const filteredTeamData = teamData.filter(t => t.teamName === team.teamName);
           const mapImagePath = await generateMapImage(filteredTeamData, false);  // Show only this team's tiles
 
@@ -121,6 +125,7 @@ module.exports = {
           }
         }
 
+        // Respond to the user after all teams are reset
         await interaction.followUp({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
       } else {
         await interaction.followUp({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
