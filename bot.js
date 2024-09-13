@@ -42,6 +42,8 @@ client.once(Events.ClientReady, async () => {
   await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
   await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
   await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+  
+  client.user.setActivity('Exploring dungeons...', { type: 'PLAYING' });
 });
 
 // Handle interactions
