@@ -1,8 +1,8 @@
 // permissionHelper.js
 
-// Check if the user has the 'event-admin' role
-function isAdmin(user) {
-  return user.roles.cache.some(role => role.name === 'event-admin');
+// Check if the user has the 'event-helper' role
+function isHelper(user) {
+  return user.roles.cache.some(role => role.name === 'event-helper');
 }
 
 // Check if the user is the owner
@@ -12,6 +12,6 @@ function isOwner(user) {
 }
 
 module.exports = {
-  isAdmin,
+  isHelper,
   isOwner, // Export the new function
 };

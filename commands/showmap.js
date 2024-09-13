@@ -4,7 +4,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../core/mapGenerator');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
-const { isAdmin } = require('../helpers/permissionHelper');  // Import the admin check
+const { isHelper } = require('../helpers/permissionHelper');  // Import the helper check
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,8 +17,8 @@ module.exports = {
         .addChoices(...teamManager.getTeamOptions())),  // Dynamically generate team options from teamManager
 
   async execute(interaction) {
-    // Check if the user is an admin
-    if (!isAdmin(interaction.member)) {
+    // Check if the user is an helper
+    if (!isHelper(interaction.member)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
