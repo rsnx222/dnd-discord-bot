@@ -34,16 +34,38 @@ for (const file of commandFiles) {
   }
 }
 
+// Randomised bot activities
+const activities = [
+  { type: ActivityType.Playing, message: "Exploring dungeons..." },
+  { type: ActivityType.Playing, message: "Defeating bosses..." },
+  { type: ActivityType.Playing, message: "Completing quests in Gielinor..." },
+  { type: ActivityType.Playing, message: "Battling the goblin king..." },
+  { type: ActivityType.Playing, message: "Transporting between worlds..." },
+  { type: ActivityType.Watching, message: "over adventurers" },
+  { type: ActivityType.Listening, message: "the whispers of ancient lore..." },
+  { type: ActivityType.Playing, message: "Rolling dice for fate..." },
+  { type: ActivityType.Watching, message: "the shadows in the dungeon..." },
+];
+
+// Function to set a random activity
+function setRandomActivity() {
+  const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+  client.user.setActivity(randomActivity.message, { type: randomActivity.type });
+}
+
 // On client ready
 client.once(Events.ClientReady, async () => {
   logger.log('Bot is online!');
+
+  // Set activity randomly every 30 mins
+  setRandomActivity();
+  setInterval(setRandomActivity, 1800000);
 
   // Clear old commands and register the current ones from the /commands directory
   await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
   await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
   await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-  
-  client.user.setActivity('Exploring dungeons...', { type: 'PLAYING' });
+
 });
 
 // Handle interactions
