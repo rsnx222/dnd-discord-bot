@@ -3,7 +3,8 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
-const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner instead of isAdmin
+const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
+const { generateMapImage } = require('../core/mapGenerator');
 
 module.exports = {
   data: [
@@ -50,6 +51,33 @@ module.exports = {
       if (enteredTeamName === selectedTeam) {
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
+
+        // Generate the map for the selected team
+        const teamData = await databaseHelper.getTeamData();
+        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
+        const mapImagePath = await generateMapImage(filteredTeamData, false); // Show only this team's tiles
+
+        const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
+
+        if (channelId) {
+          const channel = await interaction.client.channels.fetch(channelId);
+
+          if (channel) {
+            // Send the cryptic, fun, welcoming message
+            const welcomeMessage = `
+              Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
+              You find a crumpled note on the ground - you can barely make out the sentence:
+              
+              "*I can't believe we're finally here! Gone on ahead of you to the East - I'll meet you at the lair!* - **L**"
+
+              (P.S. The first tile to the east holds a challenge...)
+            `;
+
+            await channel.send(welcomeMessage);
+            await channel.send({ files: [mapImagePath] });
+          }
+        }
+
         await interaction.reply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
         await interaction.reply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
@@ -67,6 +95,30 @@ module.exports = {
         for (const team of teamData) {
           await databaseHelper.updateTeamLocation(team.teamName, 'A5');
           await databaseHelper.updateExploredTiles(team.teamName, ['A5']);
+
+          // Generate the map for each team and send the message in their channel
+          const filteredTeamData = teamData.filter(t => t.teamName === team.teamName);
+          const mapImagePath = await generateMapImage(filteredTeamData, false);  // Show only this team's tiles
+
+          const channelId = await databaseHelper.getTeamChannelId(team.teamName);
+
+          if (channelId) {
+            const channel = await interaction.client.channels.fetch(channelId);
+
+            if (channel) {
+              const welcomeMessage = `
+                Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
+                You find a crumpled note on the ground - you can barely make out the sentence:
+                
+                "*I can't believe we're finally here! Gone on ahead of you to the East - I'll meet you at the lair!* - **L**"
+
+                (P.S. The first tile to the east holds a challenge...)
+              `;
+
+              await channel.send(welcomeMessage);
+              await channel.send({ files: [mapImagePath] });
+            }
+          }
         }
 
         await interaction.reply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
