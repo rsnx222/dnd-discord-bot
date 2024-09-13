@@ -5,8 +5,8 @@ const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../core/movementLogic');
 const { generateEventMessage } = require('../core/storylineManager');
 const { generateMapImage } = require('../core/mapGenerator');
-const teamManager = require('../helpers/teamManager');  // Team manager to generate team options
-const { isHelper } = require('../helpers/permissionHelper');  // Permission helper
+const teamManager = require('../helpers/teamManager');
+const { isHelper } = require('../helpers/permissionHelper');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,11 +16,10 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team to move')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())  // Use the same dropdown for team selection
+        .addChoices(...teamManager.getTeamOptions())
     ),
 
   async execute(interaction) {
-    // Check if the user is an helper
     if (!isHelper(interaction.member)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -47,10 +46,13 @@ module.exports = {
   },
 
   async handleButton(interaction) {
-    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)[1];
+    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)?.[1];
+
+    if (!selectedTeam) {
+      return interaction.reply({ content: 'Failed to find the selected team.', ephemeral: true });
+    }
 
     if (interaction.customId === 'move_by_direction') {
-      // Show direction buttons for movement
       const directionButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
@@ -65,7 +67,6 @@ module.exports = {
     }
 
     if (interaction.customId === 'enter_tile') {
-      // Show a modal for entering the tile coordinate
       const modal = new ModalBuilder()
         .setCustomId('enter_tile_modal')
         .setTitle('Enter Tile Coordinate');
@@ -84,7 +85,11 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)[1];
+    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)?.[1];
+
+    if (!selectedTeam) {
+      return interaction.reply({ content: 'Failed to find the selected team.', ephemeral: true });
+    }
 
     // Handle tile coordinate input
     if (interaction.customId === 'enter_tile_modal') {
