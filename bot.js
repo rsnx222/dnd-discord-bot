@@ -23,7 +23,15 @@ const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(fil
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+  
+  // If the command exports multiple commands, iterate over them
+  if (Array.isArray(command.data)) {
+    command.data.forEach(cmd => {
+      client.commands.set(cmd.name, command);
+    });
+  } else {
+    client.commands.set(command.data.name, command);
+  }
 }
 
 // On client ready
