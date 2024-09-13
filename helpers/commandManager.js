@@ -44,7 +44,6 @@ async function fetchCommands(DISCORD_CLIENT_ID, guildId) {
     const commands = await rest.get(
       Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId)
     );
-    console.log('Registered Slash Commands:', commands);
     return commands;
   } catch (error) {
     console.error('Error fetching commands:', error);

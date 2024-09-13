@@ -1,14 +1,16 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+// moveteam.js
+
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../core/movementLogic');
 const { generateEventMessage } = require('../core/storylineManager');
 const { generateMapImage } = require('../core/mapGenerator');
-const { isHelper } = require('../helpers/permissionHelper');  // Add the helper check helper
+const { isHelper } = require('../helpers/permissionHelper');  // Add the helper check
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('moveteam')
-    .setDescription('Move a team by selecting a direction')
+    .setDescription('Move a team by selecting a direction or tile coordinate')
     .addStringOption(option =>
       option.setName('team')
         .setDescription('Optional: Select a team to move')
@@ -16,7 +18,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // Check if the user is an helper
+    // Check if the user is a helper
     if (!isHelper(interaction.member)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -28,8 +30,8 @@ module.exports = {
       const selectedTeam = interaction.options.getString('team');
 
       if (selectedTeam) {
-        // Team is already selected from dropdown, proceed with direction selection
-        return this.showDirectionSelection(interaction, selectedTeam);
+        // Team is already selected from dropdown, proceed with selection
+        return this.showMovementOptions(interaction, selectedTeam);
       }
 
       // If no team is selected, show the dropdown menu
@@ -63,7 +65,7 @@ module.exports = {
         await interaction.deferUpdate();
         const selectedTeam = interaction.values[0];
 
-        return this.showDirectionSelection(interaction, selectedTeam);
+        return this.showMovementOptions(interaction, selectedTeam);
       } catch (error) {
         console.error('Error handling select menu:', error);
         if (!interaction.replied) {
@@ -75,95 +77,103 @@ module.exports = {
     }
   },
 
-  async showDirectionSelection(interaction, selectedTeam) {
-    const directionButtons = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+  async showMovementOptions(interaction, selectedTeam) {
+    const movementButtons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('direction').setLabel('⬆️ Move with Directions').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('tile_input').setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.editReply({
-      content: `You selected ${selectedTeam}. Now choose the direction:`,
-      components: [directionButtons],
+      content: `You selected ${selectedTeam}. Choose how you'd like to move:`,
+      components: [movementButtons],
     });
   },
 
   async handleButton(interaction) {
-    const direction = interaction.customId;
     const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
 
-    try {
-      // Defer to ensure interaction validity
-      await interaction.deferReply({ ephemeral: true });
+    if (interaction.customId === 'direction') {
+      // Show the direction buttons for movement
+      const directionButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+      );
 
-      const teamData = await databaseHelper.getTeamData();
-      const team = teamData.find(t => t.teamName === teamName);
-
-      if (!team || !team.currentLocation) {
-        throw new Error(`Could not find current location for team ${teamName}`);
-      }
-
-      const currentLocation = team.currentLocation;
-      const newTile = calculateNewTile(currentLocation, direction);
-
-      if (!newTile) {
-        await interaction.editReply({
-          content: 'Invalid move. The team cannot move in that direction.',
-        });
-        return;
-      }
-
-      const tileData = await databaseHelper.getTileData(newTile);
-      const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
-
-      // Update the team's location in the database
-      await databaseHelper.updateTeamLocation(teamName, newTile);
-
-      // Update the explored tiles list (ensure no duplicates)
-      const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
-      await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
-
-      // Update the team's current location and explored tiles in the local teamData
-      const filteredTeamData = teamData.filter(t => t.teamName === teamName);
-      if (filteredTeamData.length > 0) {
-        filteredTeamData[0].currentLocation = newTile;  // Update current location
-        filteredTeamData[0].exploredTiles = updatedExploredTiles;  // Update explored tiles
-      }
-
-      // Now generate the map image for the selected team only
-      const mapImagePath = await generateMapImage(filteredTeamData, false);  // Pass false to show only this team's tiles
-
-      const channelId = await databaseHelper.getTeamChannelId(teamName);
-
-      if (!channelId) {
-        await interaction.editReply({
-          content: 'Failed to find the team’s channel. Please contact the event organizer.',
-        });
-        return;
-      }
-
-      const channel = await interaction.client.channels.fetch(channelId);
-
-      if (channel) {
-        await channel.send(eventMessage);
-        await channel.send({ files: [mapImagePath] });
-      }
-
-      // Add a direct link to the team's channel in the helper response
-      const teamChannelLink = `<#${channelId}>`;
-      await interaction.editReply({
-        content: `Team ${teamName} moved ${direction} to ${newTile}. The update has been posted to the team's channel: ${teamChannelLink}.`,
+      return interaction.editReply({
+        content: `Choose a direction to move ${teamName}:`,
+        components: [directionButtons],
       });
+    }
 
-    } catch (error) {
-      console.error(`Error moving team ${teamName}:`, error);
-      if (!interaction.replied) {
+    if (interaction.customId === 'tile_input') {
+      // Show a modal to input tile coordinate
+      const modal = new ModalBuilder()
+        .setCustomId('enter_tile_modal')
+        .setTitle('Enter Tile Coordinate');
+
+      const textInput = new TextInputBuilder()
+        .setCustomId('tile_input')
+        .setLabel('Enter a tile coordinate (e.g., A7)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      const actionRow = new ActionRowBuilder().addComponents(textInput);
+      modal.addComponents(actionRow);
+
+      return interaction.showModal(modal);
+    }
+  },
+
+  async handleModal(interaction) {
+    const teamName = interaction.message.content.match(/You selected (.+?)\./)[1];
+    
+    // Handle tile coordinate input
+    if (interaction.customId === 'enter_tile_modal') {
+      const enteredTile = interaction.fields.getTextInputValue('tile_input').toUpperCase();
+
+      try {
+        await interaction.deferReply({ ephemeral: true });
+
+        const teamData = await databaseHelper.getTeamData();
+        const team = teamData.find(t => t.teamName === teamName);
+
+        if (!team) {
+          throw new Error(`Could not find team data for ${teamName}`);
+        }
+
+        const tileData = await databaseHelper.getTileData(enteredTile);
+        const eventMessage = tileData ? generateEventMessage(tileData) : `Your team has moved to ${enteredTile}. There doesn't seem to be anything unusual here.`;
+
+        // Update the team's location
+        await databaseHelper.updateTeamLocation(teamName, enteredTile);
+
+        // Update the explored tiles
+        const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
+        await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
+
+        // Update the map
+        const filteredTeamData = teamData.filter(t => t.teamName === teamName);
+        const mapImagePath = await generateMapImage(filteredTeamData, false);
+
+        const channelId = await databaseHelper.getTeamChannelId(teamName);
+        const channel = await interaction.client.channels.fetch(channelId);
+
+        if (channel) {
+          await channel.send(eventMessage);
+          await channel.send({ files: [mapImagePath] });
+        }
+
+        const teamChannelLink = `<#${channelId}>`;
         await interaction.editReply({
-          content: 'Failed to move the team. Please try again later.',
+          content: `Team ${teamName} moved to ${enteredTile}. The update has been posted to the team's channel: ${teamChannelLink}.`,
         });
+
+      } catch (error) {
+        console.error(`Error moving team ${teamName}:`, error);
+        await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
       }
     }
   }
-
 };
