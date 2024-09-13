@@ -32,10 +32,11 @@ module.exports = {
 
       // Present options for moving by direction or entering a tile coordinate
       const movementOptions = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`move_by_direction|${selectedTeam}`).setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`enter_tile|${selectedTeam}`).setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`move_by_direction_${selectedTeam}`).setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`enter_tile_${selectedTeam}`).setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
       );
 
+      // Update the interaction with the movement options (use update instead of editReply)
       await interaction.editReply({
         content: `You selected ${selectedTeam}. Choose how you'd like to move:`,
         components: [movementOptions],
@@ -47,14 +48,14 @@ module.exports = {
   },
 
   async handleButton(interaction) {
-    const [action, selectedTeam] = interaction.customId.split('|');
+    const [action, selectedTeam] = interaction.customId.split('_').slice(-2);
 
     if (action === 'move_by_direction') {
       const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`north|${selectedTeam}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`south|${selectedTeam}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`west|${selectedTeam}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`east|${selectedTeam}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        new ButtonBuilder().setCustomId(`north_${selectedTeam}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`south_${selectedTeam}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`west_${selectedTeam}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`east_${selectedTeam}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
       );
 
       return interaction.update({
@@ -86,12 +87,16 @@ module.exports = {
         const tileData = await databaseHelper.getTileData(newTile);
         const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${action} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
 
+        // Update the team's location in the database (ensure this is done before generating the map)
         await databaseHelper.updateTeamLocation(selectedTeam, newTile);
 
+        // Update the explored tiles list
         const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
         await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
-        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
+        // Re-fetch the updated team data after the move, then generate the map
+        const refreshedTeamData = await databaseHelper.getTeamData();
+        const filteredTeamData = refreshedTeamData.filter(t => t.teamName === selectedTeam);
         const mapImagePath = await generateMapImage(filteredTeamData, false);
 
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
@@ -117,9 +122,9 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    const selectedTeam = interaction.customId.split('|').pop();
+    const selectedTeam = interaction.customId.split('_').pop();
 
-    if (interaction.customId.startsWith('enter_tile')) {
+    if (interaction.customId.startsWith('enter_tile_modal')) {
       const enteredTile = interaction.fields.getTextInputValue('tile_coordinate').toUpperCase();
 
       try {
@@ -137,12 +142,16 @@ module.exports = {
           ? generateEventMessage(tileData)
           : `Your team has moved to ${enteredTile}. There doesn't seem to be anything unusual here.`;
 
+        // Update the team's location
         await databaseHelper.updateTeamLocation(selectedTeam, enteredTile);
 
+        // Update the explored tiles
         const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
         await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
-        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
+        // Generate the updated map
+        const refreshedTeamData = await databaseHelper.getTeamData();
+        const filteredTeamData = refreshedTeamData.filter(t => t.teamName === selectedTeam);
         const mapImagePath = await generateMapImage(filteredTeamData, false);
 
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
