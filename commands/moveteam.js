@@ -108,9 +108,8 @@ module.exports = {
         return;
       }
 
-      const tileData = await databaseHelper.getTileData(newTile);// Fix in moveteam.js (handleButton function)
+      const tileData = await databaseHelper.getTileData(newTile);
       const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
-
 
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
@@ -145,8 +144,10 @@ module.exports = {
         await channel.send({ files: [mapImagePath] });
       }
 
+      // Add a direct link to the team's channel in the admin response
+      const teamChannelLink = `<#${channelId}>`;
       await interaction.editReply({
-        content: `Team ${teamName} moved ${direction} to ${newTile}. The update has been posted to the team's channel.`,
+        content: `Team ${teamName} moved ${direction} to ${newTile}. The update has been posted to the team's channel: ${teamChannelLink}.`,
       });
 
     } catch (error) {
