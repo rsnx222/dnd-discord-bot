@@ -1,8 +1,9 @@
 // getexploredtiles.js
 
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
+const { isAdmin } = require('../helpers/permissionHelper');  // Add permission helper
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,6 +17,11 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // Check if the user is an admin
+    if (!isAdmin(interaction.member)) {
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    }
+
     try {
       await interaction.deferReply({ ephemeral: true });
 
@@ -28,7 +34,7 @@ module.exports = {
       }
 
       const exploredTiles = team.exploredTiles;
-      
+
       // Define the grid (5x10) for example (A1 to E10)
       const columns = ['A', 'B', 'C', 'D', 'E'];
       const rows = [...Array(10).keys()].map(i => i + 1); // 1 to 10

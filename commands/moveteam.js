@@ -3,6 +3,7 @@ const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../core/movementLogic');
 const { generateEventMessage } = require('../core/storylineManager');
 const { generateMapImage } = require('../core/mapGenerator');
+const { isAdmin } = require('../helpers/permissionHelper');  // Add the admin check helper
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,6 +16,11 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // Check if the user is an admin
+    if (!isAdmin(interaction.member)) {
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    }
+
     try {
       await interaction.deferReply({ ephemeral: true });
 

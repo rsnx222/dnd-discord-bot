@@ -3,7 +3,7 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
-const { isAdmin } = require('../helpers/permissionHelper');
+const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner instead of isAdmin
 
 module.exports = {
   data: [
@@ -22,7 +22,8 @@ module.exports = {
   ],
 
   async execute(interaction) {
-    if (!isAdmin(interaction.member)) {
+    // Check if the user is the owner
+    if (!isOwner(interaction.user)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
