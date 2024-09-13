@@ -3,7 +3,7 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../core/movementLogic');
-const { generateEventMessage } = require('../core/storylineManager');
+const { generateEventMessage } = require('../core/eventManager');
 const { generateMapImage } = require('../core/mapGenerator');
 const teamManager = require('../helpers/teamManager');
 const { isHelper } = require('../helpers/permissionHelper');
