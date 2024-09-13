@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');  // Import ActivityType
 const commandManager = require('./helpers/commandManager');  // Manages loading and executing commands
 const logger = require('./helpers/logger');  // Log management
 const settings = require('./config/settings');  // Settings and configuration
@@ -131,3 +131,4 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 // Login the bot
 client.login(settings.DISCORD_TOKEN);
+
