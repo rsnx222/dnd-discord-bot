@@ -102,7 +102,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // Handle button interaction (e.g., for directional movement in moveteam)
   else if (interaction.isButton()) {
-    const command = client.commands.get('moveteam');
+    const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
 
     if (command && typeof command.handleButton === 'function') {
       try {
@@ -114,16 +114,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
   
-  // Handle modal interaction (for confirmation in resetposition and resetallpositions)
+  // Handle modal interaction (for moveteamcoord command or resetposition)
   else if (interaction.isModalSubmit()) {
-    const command = client.commands.get('resetposition') || client.commands.get('resetallpositions');
+    const command = client.commands.get('moveteamcoord') || client.commands.get('resetposition');
 
     if (command && typeof command.handleModal === 'function') {
       try {
         await command.handleModal(interaction);
       } catch (error) {
         logger.error('Error handling modal interaction:', error);
-        await interaction.reply({ content: 'Failed to handle the confirmation modal.', ephemeral: true });
+        await interaction.reply({ content: 'Failed to handle the modal.', ephemeral: true });
       }
     }
   }
@@ -131,4 +131,3 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 // Login the bot
 client.login(settings.DISCORD_TOKEN);
-
