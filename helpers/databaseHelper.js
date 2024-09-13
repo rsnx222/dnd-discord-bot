@@ -88,13 +88,8 @@ async function getTileData(tileName) {
       return null;
     }
 
-    const row = rows[0];
-    return {
-      tileName: row.tile_name,
-      event: row.event,
-      description: row.description,
-      eventType: row.event_type
-    };
+    return rows[0];
+
   } catch (error) {
     console.error('Error fetching tile data from database:', error);
     throw error;

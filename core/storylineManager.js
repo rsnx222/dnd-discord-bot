@@ -1,12 +1,11 @@
 // storylineManager.js
 
-// Generate a message for the event based on tile data
 function generateEventMessage(tileData) {
-  if (!tileData || !tileData.eventType) {
+  if (!tileData || !tileData.event_type) {
     return 'You have arrived at a new tile, but there is no information available about it.';
   }
 
-  switch (tileData.eventType.toLowerCase()) {
+  switch (tileData.event_type.toLowerCase()) {
     case 'quest':
       return `You have discovered a quest on this tile. ${tileData.description}`;
     case 'challenge':
@@ -21,7 +20,3 @@ function generateEventMessage(tileData) {
       return `You have encountered something on this tile: ${tileData.description}`;
   }
 }
-
-module.exports = {
-  generateEventMessage,
-};

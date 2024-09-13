@@ -108,8 +108,9 @@ module.exports = {
         return;
       }
 
-      const tileData = await databaseHelper.getTileData(newTile);
+      const tileData = await databaseHelper.getTileData(newTile);// Fix in moveteam.js (handleButton function)
       const eventMessage = tileData ? generateEventMessage(tileData) : `Your team moved ${direction} to ${newTile}. Looking out on the area you don’t see anything alarming so you set up camp and rest up...`;
+
 
       // Update the team's location in the database
       await databaseHelper.updateTeamLocation(teamName, newTile);
