@@ -4,6 +4,7 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const databaseHelper = require('../helpers/databaseHelper');
 const { generateEventMessage } = require('../core/eventManager');
 const { generateMapImage } = require('../core/mapGenerator');
+const teamManager = require('../helpers/teamManager');
 const { isHelper } = require('../helpers/permissionHelper');
 
 module.exports = {
