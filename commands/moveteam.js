@@ -31,8 +31,8 @@ module.exports = {
 
       // Present options for moving by direction or entering a tile coordinate
       const movementOptions = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('move_by_direction').setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('enter_tile').setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`move_by_direction_${selectedTeam}`).setLabel('⬆️ Move by Direction').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`enter_tile_${selectedTeam}`).setLabel('Enter Tile Coordinate').setStyle(ButtonStyle.Secondary)
       );
 
       await interaction.editReply({
@@ -46,18 +46,16 @@ module.exports = {
   },
 
   async handleButton(interaction) {
-    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)?.[1];
+    // Extract the selected team from the button custom ID
+    const [action, selectedTeam] = interaction.customId.split('_').slice(-2);
 
-    if (!selectedTeam) {
-      return interaction.reply({ content: 'Failed to find the selected team.', ephemeral: true });
-    }
-
-    if (interaction.customId === 'move_by_direction') {
+    if (action === 'move_by_direction') {
+      // Show direction buttons for movement
       const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('north').setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('south').setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('west').setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('east').setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        new ButtonBuilder().setCustomId(`north_${selectedTeam}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`south_${selectedTeam}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`west_${selectedTeam}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`east_${selectedTeam}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
       );
 
       return interaction.update({
@@ -66,9 +64,10 @@ module.exports = {
       });
     }
 
-    if (interaction.customId === 'enter_tile') {
+    if (action === 'enter_tile') {
+      // Show a modal for entering the tile coordinate
       const modal = new ModalBuilder()
-        .setCustomId('enter_tile_modal')
+        .setCustomId(`enter_tile_modal_${selectedTeam}`)
         .setTitle('Enter Tile Coordinate');
 
       const textInput = new TextInputBuilder()
@@ -82,17 +81,67 @@ module.exports = {
 
       return interaction.showModal(modal);
     }
+
+    // Handle direction buttons (north, south, etc.)
+    if (['north', 'south', 'west', 'east'].includes(action)) {
+      try {
+        await interaction.deferReply({ ephemeral: true });
+
+        const teamData = await databaseHelper.getTeamData();
+        const team = teamData.find(t => t.teamName === selectedTeam);
+
+        if (!team || !team.currentLocation) {
+          throw new Error(`Could not find current location for team ${selectedTeam}`);
+        }
+
+        const currentLocation = team.currentLocation;
+        const newTile = calculateNewTile(currentLocation, action);
+
+        if (!newTile) {
+          return interaction.editReply({
+            content: 'Invalid move. The team cannot move in that direction.',
+          });
+        }
+
+        const tileData = await databaseHelper.getTileData(newTile);
+        const eventMessage = tileData
+          ? generateEventMessage(tileData)
+          : `Your team moved ${action} to ${newTile}. Looking out on the area you don’t see anything alarming, so you set up camp and rest up.`;
+
+        await databaseHelper.updateTeamLocation(selectedTeam, newTile);
+
+        const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
+        await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
+
+        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
+        const mapImagePath = await generateMapImage(filteredTeamData, false);
+
+        const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
+        const channel = await interaction.client.channels.fetch(channelId);
+
+        if (channel) {
+          await channel.send(eventMessage);
+          await channel.send({ files: [mapImagePath] });
+        }
+
+        return interaction.editReply({
+          content: `Team ${selectedTeam} moved ${action} to ${newTile}. The update has been posted to the team's channel.`,
+        });
+
+      } catch (error) {
+        console.error(`Error moving team ${selectedTeam}:`, error);
+        return interaction.editReply({
+          content: 'Failed to move the team. Please try again later.',
+        });
+      }
+    }
   },
 
   async handleModal(interaction) {
-    const selectedTeam = interaction.message.content.match(/You selected (.+?)\./)?.[1];
-
-    if (!selectedTeam) {
-      return interaction.reply({ content: 'Failed to find the selected team.', ephemeral: true });
-    }
+    const selectedTeam = interaction.customId.split('_').slice(-1)[0]; // Get team from modal ID
 
     // Handle tile coordinate input
-    if (interaction.customId === 'enter_tile_modal') {
+    if (interaction.customId.startsWith('enter_tile_modal')) {
       const enteredTile = interaction.fields.getTextInputValue('tile_coordinate').toUpperCase();
 
       try {
@@ -110,14 +159,11 @@ module.exports = {
           ? generateEventMessage(tileData)
           : `Your team has moved to ${enteredTile}. There doesn't seem to be anything unusual here.`;
 
-        // Update the team's location
         await databaseHelper.updateTeamLocation(selectedTeam, enteredTile);
 
-        // Update the explored tiles
         const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
         await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
-        // Update the map
         const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
         const mapImagePath = await generateMapImage(filteredTeamData, false);
 
