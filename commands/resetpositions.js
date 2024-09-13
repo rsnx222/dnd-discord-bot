@@ -31,12 +31,12 @@ module.exports = {
     // Handling the resetposition command
     if (interaction.commandName === 'resetposition') {
       const selectedTeam = interaction.options.getString('team');
-      const modal = createConfirmationModal(`reset_team_modal_${selectedTeam}`, `Type the team name (${selectedTeam}) to confirm:`);
+      const modal = createConfirmationModal(`reset_team_modal_${selectedTeam}`, `confirm_team_name`, `Type the team name (${selectedTeam}) to confirm:`);
       await interaction.showModal(modal);
     
     // Handling the resetallpositions command
     } else if (interaction.commandName === 'resetallpositions') {
-      const modal = createConfirmationModal('reset_all_teams_modal', `Type 'confirm' to reset all teams to A5`);
+      const modal = createConfirmationModal('reset_all_teams_modal', `confirm_reset_all`, `Type 'confirm' to reset all teams to A5`);
       await interaction.showModal(modal);
     }
   },
@@ -130,13 +130,13 @@ module.exports = {
 };
 
 // Helper function to create a confirmation modal
-function createConfirmationModal(customId, labelText) {
+function createConfirmationModal(customId, inputId, labelText) {
   const modal = new ModalBuilder()
     .setCustomId(customId)
     .setTitle('Confirm Reset');
 
   const textInput = new TextInputBuilder()
-    .setCustomId('confirm_team_name')  // For both specific team and all teams, we use the same ID
+    .setCustomId(inputId)  // Use dynamic custom input ID based on context
     .setLabel(labelText)
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
