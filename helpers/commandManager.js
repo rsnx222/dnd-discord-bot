@@ -1,3 +1,5 @@
+// commandManager.js
+
 const { REST, Routes } = require('discord.js');
 const settings = require('../config/settings');
 const fs = require('fs');
@@ -12,9 +14,15 @@ async function registerCommands(DISCORD_CLIENT_ID, guildId) {
     // Load commands from the /commands directory
     const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
 
-    const commands = commandFiles.map(file => {
+    const commands = commandFiles.flatMap(file => {
       const command = require(`../commands/${file}`);
-      return command.data.toJSON(); // Ensure commands are properly formatted for registration
+
+      // Check if the file exports multiple commands or a single command
+      if (Array.isArray(command.data)) {
+        return command.data.map(cmd => cmd.toJSON()); // If multiple commands, map over them
+      } else {
+        return command.data.toJSON(); // If single, return it directly
+      }
     });
 
     // Register commands with Discord
