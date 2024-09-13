@@ -20,3 +20,7 @@ function generateEventMessage(tileData) {
       return `You have encountered something on this tile: ${tileData.description}`;
   }
 }
+
+module.exports = {
+  generateEventMessage,
+};
