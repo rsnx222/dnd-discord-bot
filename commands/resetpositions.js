@@ -9,7 +9,7 @@ module.exports = {
   data: [
     new SlashCommandBuilder()
       .setName('resetposition')
-      .setDescription('Reset the position of a specific team to A3')
+      .setDescription('Reset the position of a specific team to A5')
       .addStringOption(option =>
         option.setName('team')
           .setDescription('Team to reset')
@@ -18,7 +18,7 @@ module.exports = {
 
     new SlashCommandBuilder()
       .setName('resetallpositions')
-      .setDescription('Reset all team positions to A3')
+      .setDescription('Reset all team positions to A5')
   ],
 
   async execute(interaction) {
@@ -34,7 +34,7 @@ module.exports = {
     
     // Handling the resetallpositions command
     } else if (interaction.commandName === 'resetallpositions') {
-      const modal = createConfirmationModal('reset_all_teams_modal', `Type 'confirm' to reset all teams to A3`);
+      const modal = createConfirmationModal('reset_all_teams_modal', `Type 'confirm' to reset all teams to A5`);
       await interaction.showModal(modal);
     }
   },
@@ -47,9 +47,9 @@ module.exports = {
 
       // Check if the entered team name matches the selected one
       if (enteredTeamName === selectedTeam) {
-        await databaseHelper.updateTeamLocation(selectedTeam, 'A3');
-        await databaseHelper.updateExploredTiles(selectedTeam, ['A3']);
-        await interaction.reply({ content: `${selectedTeam} has been reset to A3 with only A3 as explored.`, ephemeral: true });
+        await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
+        await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
+        await interaction.reply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
         await interaction.reply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
@@ -62,13 +62,13 @@ module.exports = {
       if (confirmationText.toLowerCase() === 'confirm') {
         const teamData = await databaseHelper.getTeamData();
 
-        // Reset all teams to A3 and set explored tiles to ['A3']
+        // Reset all teams to A5 and set explored tiles to ['A5']
         for (const team of teamData) {
-          await databaseHelper.updateTeamLocation(team.teamName, 'A3');
-          await databaseHelper.updateExploredTiles(team.teamName, ['A3']);
+          await databaseHelper.updateTeamLocation(team.teamName, 'A5');
+          await databaseHelper.updateExploredTiles(team.teamName, ['A5']);
         }
 
-        await interaction.reply({ content: 'All teams have been reset to A3 with only A3 as explored.', ephemeral: true });
+        await interaction.reply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
       } else {
         await interaction.reply({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
       }
