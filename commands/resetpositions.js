@@ -78,9 +78,9 @@ module.exports = {
           }
         }
 
-        await interaction.reply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
+        await interaction.followUp({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
-        await interaction.reply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
+        await interaction.followUp({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
 
     // Modal for resetting all teams
@@ -121,9 +121,9 @@ module.exports = {
           }
         }
 
-        await interaction.reply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
+        await interaction.followUp({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
       } else {
-        await interaction.reply({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
+        await interaction.followUp({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
       }
     }
   }
