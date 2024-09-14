@@ -22,6 +22,9 @@ module.exports = {
   async handleModal(interaction) {
     if (interaction.customId !== 'reset_all_teams_modal') return;
 
+    // Ensure the interaction is deferred to avoid timeouts
+    await interaction.deferReply({ ephemeral: true });
+
     const confirmationText = interaction.fields.getTextInputValue('confirm_reset_all');
 
     if (confirmationText.toLowerCase() === 'confirm') {
@@ -44,13 +47,16 @@ module.exports = {
         }
       }
 
-      await interaction.followUp({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
+      // Use editReply to finalize the deferred interaction
+      await interaction.editReply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
     } else {
-      await interaction.followUp({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
+      // Handle failure case when "confirm" is not typed
+      await interaction.editReply({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
     }
   }
 };
 
+// Helper function to create the confirmation modal
 function createConfirmationModal(customId, inputId, labelText) {
   const modal = new ModalBuilder()
     .setCustomId(customId)

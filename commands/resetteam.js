@@ -3,7 +3,7 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
-const { isOwner } = require('../helpers/permissionHelper');
+const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
 const { generateMapImage } = require('../core/mapGenerator');
 
 module.exports = {
@@ -14,9 +14,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Team to reset')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())),
+        .addChoices(...teamManager.getTeamOptions())
+    ),  // Dynamically generate team options
 
   async execute(interaction) {
+    // Check if the user is the owner
     if (!isOwner(interaction.user)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -27,42 +29,69 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    if (!interaction.customId.startsWith('reset_team_modal_')) return;
+    // Ensure modal handling starts by deferring the reply
+    await interaction.deferReply({ ephemeral: true });
 
-    const selectedTeam = interaction.customId.split('_').pop();
-    const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
+    if (interaction.customId.startsWith('reset_team_modal_')) {
+      const selectedTeam = interaction.customId.split('_').pop();  // Extract the team name
+      const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
 
-    if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
-      await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
-      await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
+      // Check if the entered team name matches the selected one
+      if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
+        // Log the reset action
+        console.log(`Team name matches. Resetting team ${selectedTeam}.`);
 
-      const teamData = await databaseHelper.getTeamData();
-      const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-      const mapImagePath = await generateMapImage(filteredTeamData, false);
+        // Update the team's location and explored tiles
+        await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
+        await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
 
-      const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
-      const channel = await interaction.client.channels.fetch(channelId);
+        // Generate the map for the selected team
+        const teamData = await databaseHelper.getTeamData();
+        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
+        const mapImagePath = await generateMapImage(filteredTeamData, false); // Show only this team's tiles
 
-      if (channel) {
-        const welcomeMessage = `Your team wakes up in a strange land... Prepare for your journey!`;
-        await channel.send(welcomeMessage);
-        await channel.send({ files: [mapImagePath] });
+        const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
+
+        if (channelId) {
+          const channel = await interaction.client.channels.fetch(channelId);
+
+          if (channel) {
+            // Send a cryptic, fun, welcoming message after the map is updated
+            const welcomeMessage = `
+              Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
+              You find a crumpled note on the ground - you can barely make out the sentence:
+              
+              "*I can't believe we're finally here! Gone on ahead of you to the East - I'll meet you at the lair!* - **L**"
+
+              (P.S. The first tile to the east holds a challenge...)
+            `;
+
+            await channel.send(welcomeMessage);
+            await channel.send({ files: [mapImagePath] });
+          }
+        }
+
+        // Send the success message to the user
+        await interaction.editReply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
+      } else {
+        // Log team name mismatch
+        console.log('Team name mismatch.');
+
+        // Send the error message when team name doesn't match
+        await interaction.editReply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
-
-      await interaction.followUp({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
-    } else {
-      await interaction.followUp({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
     }
   }
 };
 
+// Helper function to create a confirmation modal
 function createConfirmationModal(customId, inputId, labelText) {
   const modal = new ModalBuilder()
     .setCustomId(customId)
     .setTitle('Confirm Reset');
 
   const textInput = new TextInputBuilder()
-    .setCustomId(inputId)
+    .setCustomId(inputId)  // Use dynamic custom input ID based on context
     .setLabel(labelText)
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
