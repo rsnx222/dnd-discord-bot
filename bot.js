@@ -116,10 +116,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
     
-  // Handle modal interaction (for moveteamcoord, resetteam, or resetallteams)
+  // Handle modal interaction (for moveteamcoord / resetteam)
   else if (interaction.isModalSubmit()) {
-    if (interaction.customId.startsWith('reset_team_modal_') || interaction.customId === 'reset_all_teams_modal') {
-      const command = client.commands.get('resetteam') || client.commands.get('resetallteams');
+    if (interaction.customId.startsWith('reset_team_modal_')) {
+      const command = client.commands.get('resetteam');
       if (command && typeof command.handleModal === 'function') {
         try {
           await command.handleModal(interaction);
