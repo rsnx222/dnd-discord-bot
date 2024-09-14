@@ -1,5 +1,7 @@
 // resetpositions.js
 
+// resetpositions.js
+
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
@@ -36,21 +38,27 @@ module.exports = {
     
     // Handling the resetallpositions command
     } else if (interaction.commandName === 'resetallpositions') {
-      const modal = createConfirmationModal('reset_all_teams_modal', `confirm_reset_all`, `Type 'confirm' to reset all teams to A5`);
+      const modal = createConfirmationModal('reset_all_teams_modal', `confirm_reset_all`, `Type "confirm" to reset all teams to A5`);
       await interaction.showModal(modal);
     }
   },
 
   async handleModal(interaction) {
+    // Log the customId to see which modal was submitted
+    console.log(`Modal submitted: ${interaction.customId}`);
     await interaction.deferReply({ ephemeral: true });
 
     // Modal for resetting a specific team
     if (interaction.customId.startsWith('reset_team_modal_')) {
       const selectedTeam = interaction.customId.split('_').pop();  // Extract the team name
       const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
+      
+      console.log(`Selected Team: ${selectedTeam}, Entered Team Name: ${enteredTeamName}`);
 
       // Check if the entered team name matches the selected one
-      if (enteredTeamName === selectedTeam) {
+      if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
+        console.log(`Team name matches. Resetting team ${selectedTeam}.`);
+
         // Update the team's location and explored tiles
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
@@ -84,12 +92,14 @@ module.exports = {
         // Respond to the user once everything is completed
         await interaction.followUp({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
+        console.log('Team name mismatch.');
         await interaction.followUp({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
 
     // Modal for resetting all teams
     } else if (interaction.customId === 'reset_all_teams_modal') {
       const confirmationText = interaction.fields.getTextInputValue('confirm_reset_all');
+      console.log(`Reset all confirmation: ${confirmationText}`);
 
       // Check if the entered text is 'confirm'
       if (confirmationText.toLowerCase() === 'confirm') {

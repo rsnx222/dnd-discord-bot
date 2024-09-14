@@ -67,7 +67,6 @@ client.once(Events.ClientReady, async () => {
   await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
   await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
   await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-
 });
 
 // Handle interactions
@@ -88,7 +87,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // Handle select menu interaction (for team selection in moveteam or resetposition)
+  // Handle select menu interaction (for team selection in moveteam or resetpositions)
   else if (interaction.isStringSelectMenu()) {
     const command = client.commands.get('moveteam') || client.commands.get('resetpositions'); // Use resetpositions for both resetposition and resetallpositions
 
