@@ -88,7 +88,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // Handle select menu interaction (for team selection in moveteam or resetposition)
   else if (interaction.isStringSelectMenu()) {
-    const command = client.commands.get('moveteam') || client.commands.get('resetposition');
+    const command = client.commands.get('moveteam') || client.commands.get('resetpositions'); // Use resetpositions for both resetposition and resetallpositions
 
     if (command && typeof command.handleSelectMenu === 'function') {
       try {
@@ -116,7 +116,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   
   // Handle modal interaction (for moveteamcoord command or resetposition)
   else if (interaction.isModalSubmit()) {
-    const command = client.commands.get('moveteamcoord') || client.commands.get('resetposition');
+    const command = client.commands.get('moveteamcoord') || client.commands.get('resetpositions');  // Use resetpositions for handling both modal submissions
 
     if (command && typeof command.handleModal === 'function') {
       try {
