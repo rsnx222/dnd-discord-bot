@@ -1,5 +1,7 @@
 // resetallteams.js
 
+// resetallteams.js
+
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { isOwner } = require('../helpers/permissionHelper');
@@ -28,33 +30,50 @@ module.exports = {
     const confirmationText = interaction.fields.getTextInputValue('confirm_reset_all');
 
     if (confirmationText.toLowerCase() === 'confirm') {
-      const teamData = await databaseHelper.getTeamData();
+      try {
+        const teamData = await databaseHelper.getTeamData();
 
-      for (const team of teamData) {
-        await databaseHelper.updateTeamLocation(team.teamName, 'A5');
-        await databaseHelper.updateExploredTiles(team.teamName, ['A5']);
-
-        const filteredTeamData = teamData.filter(t => t.teamName === team.teamName);
-        const mapImagePath = await generateMapImage(filteredTeamData, false);
-
-        const channelId = await databaseHelper.getTeamChannelId(team.teamName);
-        const channel = await interaction.client.channels.fetch(channelId);
-
-        if (channel) {
-          const welcomeMessage = `All teams have been reset. Begin your journey again from A5!`;
-          await channel.send(welcomeMessage);
-          await channel.send({ files: [mapImagePath] });
+        for (const team of teamData) {
+          await resetTeam(team, interaction);
         }
-      }
 
-      // Use editReply to finalize the deferred interaction
-      await interaction.editReply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
+        // Once all teams are reset, reply with a success message
+        await interaction.editReply({ content: 'All teams have been reset to A5 with only A5 as explored.', ephemeral: true });
+      } catch (error) {
+        console.error('Error resetting all teams:', error);
+        await interaction.editReply({ content: 'Failed to reset all teams. Please try again later.', ephemeral: true });
+      }
     } else {
-      // Handle failure case when "confirm" is not typed
       await interaction.editReply({ content: 'Confirmation failed. You did not type "confirm".', ephemeral: true });
     }
   }
 };
+
+// Helper function to reset a team and send their map
+async function resetTeam(team, interaction) {
+  try {
+    // Update the team's location and explored tiles
+    await databaseHelper.updateTeamLocation(team.teamName, 'A5');
+    await databaseHelper.updateExploredTiles(team.teamName, ['A5']);
+
+    // Generate the map for the team
+    const filteredTeamData = [team];  // Pass only the current team
+    const mapImagePath = await generateMapImage(filteredTeamData, false);
+
+    // Fetch the team's channel and send the update
+    const channelId = await databaseHelper.getTeamChannelId(team.teamName);
+    const channel = await interaction.client.channels.fetch(channelId);
+
+    if (channel) {
+      const welcomeMessage = `Your team has been reset. Start your journey again from A5!`;
+      await channel.send(welcomeMessage);
+      await channel.send({ files: [mapImagePath] });
+    }
+  } catch (error) {
+    console.error(`Error resetting team ${team.teamName}:`, error);
+    // Optionally log or handle errors per team, but don't block the whole process
+  }
+}
 
 // Helper function to create the confirmation modal
 function createConfirmationModal(customId, inputId, labelText) {
