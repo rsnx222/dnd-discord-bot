@@ -1,3 +1,5 @@
+// bot.js
+
 const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');  // Import ActivityType
 const commandManager = require('./helpers/commandManager');  // Manages loading and executing commands
 const logger = require('./helpers/logger');  // Log management
@@ -113,17 +115,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     }
   }
-  
-  // Handle modal interaction (for moveteamcoord command or resetposition)
+    
+  // Handle modal interaction (for moveteamcoord command or resetpositions)
   else if (interaction.isModalSubmit()) {
-    const command = client.commands.get('moveteamcoord') || client.commands.get('resetpositions');  // Use resetpositions for handling both modal submissions
-
-    if (command && typeof command.handleModal === 'function') {
-      try {
-        await command.handleModal(interaction);
-      } catch (error) {
-        logger.error('Error handling modal interaction:', error);
-        await interaction.reply({ content: 'Failed to handle the modal.', ephemeral: true });
+    if (interaction.customId.startsWith('reset_team_modal_') || interaction.customId === 'reset_all_teams_modal') {
+      const command = client.commands.get('resetpositions');  // Use resetpositions to handle reset modals
+      if (command && typeof command.handleModal === 'function') {
+        try {
+          await command.handleModal(interaction);
+        } catch (error) {
+          logger.error('Error handling reset modal interaction:', error);
+          await interaction.reply({ content: 'Failed to handle the reset modal.', ephemeral: true });
+        }
+      }
+    } else if (interaction.customId.startsWith('moveteamcoord_')) {
+      const command = client.commands.get('moveteamcoord');  // Use moveteamcoord for its own modal
+      if (command && typeof command.handleModal === 'function') {
+        try {
+          await command.handleModal(interaction);
+        } catch (error) {
+          logger.error('Error handling moveteamcoord modal interaction:', error);
+          await interaction.reply({ content: 'Failed to handle the moveteamcoord modal.', ephemeral: true });
+        }
       }
     }
   }
