@@ -38,15 +38,16 @@ for (const file of commandFiles) {
 
 // Randomised bot activities
 const activities = [
-  { type: ActivityType.Playing, message: "Exploring dungeons..." },
-  { type: ActivityType.Playing, message: "Defeating bosses..." },
-  { type: ActivityType.Playing, message: "Completing quests in Gielinor..." },
-  { type: ActivityType.Playing, message: "Battling the goblin king..." },
-  { type: ActivityType.Playing, message: "Transporting between worlds..." },
-  { type: ActivityType.Watching, message: "over adventurers" },
-  { type: ActivityType.Listening, message: "the whispers of ancient lore..." },
-  { type: ActivityType.Playing, message: "Rolling dice for fate..." },
-  { type: ActivityType.Watching, message: "the shadows in the dungeon..." },
+  { type: ActivityType.Playing, message: "an epic battle against bosses" },
+  { type: ActivityType.Playing, message: "a dangerous dungeon crawl" },
+  { type: ActivityType.Playing, message: "quests to unlock ancient secrets" },
+  { type: ActivityType.Playing, message: "a fierce duel with the goblin king" },
+  { type: ActivityType.Playing, message: "a game of fate with dice rolls" },
+  { type: ActivityType.Watching, message: "adventurers brave the wilds" },
+  { type: ActivityType.Listening, message: "the whispers of ancient lore" },
+  { type: ActivityType.Watching, message: "shadows creeping in the dungeon" },
+  { type: ActivityType.Watching, message: "heroes solve riddles to unlock mysteries" },
+  { type: ActivityType.Listening, message: "tales of battles and lost treasures" }
 ];
 
 // Function to set a random activity
@@ -87,9 +88,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // Handle select menu interaction (for team selection in moveteam or resetpositions)
+  // Handle select menu interaction (for team selection in moveteam or resetteam)
   else if (interaction.isStringSelectMenu()) {
-    const command = client.commands.get('moveteam') || client.commands.get('resetpositions'); // Use resetpositions for both resetposition and resetallpositions
+    const command = client.commands.get('moveteam') || client.commands.get('resetteam');
 
     if (command && typeof command.handleSelectMenu === 'function') {
       try {
@@ -115,10 +116,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
     
-  // Handle modal interaction (for moveteamcoord command or resetpositions)
+  // Handle modal interaction (for moveteamcoord, resetteam, or resetallteams)
   else if (interaction.isModalSubmit()) {
     if (interaction.customId.startsWith('reset_team_modal_') || interaction.customId === 'reset_all_teams_modal') {
-      const command = client.commands.get('resetpositions');  // Use resetpositions to handle reset modals
+      const command = client.commands.get('resetteam') || client.commands.get('resetallteams');
       if (command && typeof command.handleModal === 'function') {
         try {
           await command.handleModal(interaction);
@@ -128,7 +129,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       }
     } else if (interaction.customId.startsWith('moveteamcoord_')) {
-      const command = client.commands.get('moveteamcoord');  // Use moveteamcoord for its own modal
+      const command = client.commands.get('moveteamcoord');
       if (command && typeof command.handleModal === 'function') {
         try {
           await command.handleModal(interaction);
