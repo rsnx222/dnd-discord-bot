@@ -1,11 +1,9 @@
 // resetpositions.js
 
-// resetpositions.js
-
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
-const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
+const { isOwner } = require('../helpers/permissionHelper');
 const { generateMapImage } = require('../core/mapGenerator');
 
 module.exports = {
@@ -17,7 +15,7 @@ module.exports = {
         option.setName('team')
           .setDescription('Team to reset')
           .setRequired(true)
-          .addChoices(...teamManager.getTeamOptions())),  // Dynamically generate team options
+          .addChoices(...teamManager.getTeamOptions())),
 
     new SlashCommandBuilder()
       .setName('resetallpositions')
@@ -33,12 +31,12 @@ module.exports = {
     // Handling the resetposition command
     if (interaction.commandName === 'resetposition') {
       const selectedTeam = interaction.options.getString('team');
-      const modal = createConfirmationModal(`reset_team_modal_${selectedTeam}`, `confirm_team_name`, `Type the team name (${selectedTeam}) to confirm:`);
+      const modal = createConfirmationModal(`reset_team_modal_${selectedTeam}`, 'confirm_team_name', `Type the team name (${selectedTeam}) to confirm:`);
       await interaction.showModal(modal);
     
     // Handling the resetallpositions command
     } else if (interaction.commandName === 'resetallpositions') {
-      const modal = createConfirmationModal('reset_all_teams_modal', `confirm_reset_all`, `Type "confirm" to reset all teams to A5`);
+      const modal = createConfirmationModal('reset_all_teams_modal', 'confirm_reset_all', `Type "confirm" to reset all teams to A5`);
       await interaction.showModal(modal);
     }
   },
@@ -66,7 +64,7 @@ module.exports = {
         // Generate the map for the selected team
         const teamData = await databaseHelper.getTeamData();
         const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-        const mapImagePath = await generateMapImage(filteredTeamData, false); // Show only this team's tiles
+        const mapImagePath = await generateMapImage(filteredTeamData, false);
 
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
 
@@ -112,7 +110,7 @@ module.exports = {
 
           // Generate the map for each team after the location is updated
           const filteredTeamData = teamData.filter(t => t.teamName === team.teamName);
-          const mapImagePath = await generateMapImage(filteredTeamData, false);  // Show only this team's tiles
+          const mapImagePath = await generateMapImage(filteredTeamData, false);
 
           const channelId = await databaseHelper.getTeamChannelId(team.teamName);
 
@@ -151,7 +149,7 @@ function createConfirmationModal(customId, inputId, labelText) {
     .setTitle('Confirm Reset');
 
   const textInput = new TextInputBuilder()
-    .setCustomId(inputId)  // Use dynamic custom input ID based on context
+    .setCustomId(inputId)  // Ensure this ID matches what is retrieved in handleModal
     .setLabel(labelText)
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
