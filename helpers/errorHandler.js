@@ -7,6 +7,10 @@ async function handleError(error, interaction, customMessage = 'An error occurre
     logger.error(customMessage, error);
 
     try {
+        // Log the interaction type and its available methods for debugging
+        logger.error('Interaction type:', interaction.constructor.name);
+        logger.error('Interaction methods:', Object.keys(interaction));
+
         // Check if the interaction has been deferred or replied to
         if (interaction.deferred || interaction.replied) {
             // If already replied, use editReply to update the message
