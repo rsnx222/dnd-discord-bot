@@ -197,23 +197,27 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
     // Apply any rewards for task completion
     const rewardMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
 
-    // Increment the event index to move to the next event on the tile
+    // Combine task completion and reward messages into one final response
+    let finalMessage = `${completionMessage}\n${rewardMessage || 'No rewards earned this time.'}`;
+
+    // Update the event index or move to the next event
     eventIndex++;
     if (eventIndex < tileData.event_type.length) {
-      // There are more events on this tile, so proceed to the next one
+      // Send the next event on the tile
       await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex);
     } else {
-      // All events are completed, now show direction choice
+      // All events are completed, allow direction choice
       await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex, true);
     }
 
-    // Send a final success message with task completion details
-    await interaction.editReply({ content: `${completionMessage}\n${rewardMessage}`, ephemeral: true });
+    // Send the combined final message as a single update
+    await interaction.editReply({ content: finalMessage, ephemeral: true });
   } catch (error) {
     console.error('Error handling task completion:', error);
     await interaction.editReply({ content: 'Failed to complete the task. Please try again later.', ephemeral: true });
   }
 }
+
 
 
 
