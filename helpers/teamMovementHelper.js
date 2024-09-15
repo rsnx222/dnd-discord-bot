@@ -180,15 +180,20 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
     }
 
     // Log initial state
-    console.log(`Handling task completion for team ${selectedTeam}, event index: ${eventIndex}, event type: ${tileData.event_type[eventIndex]}`);
+    console.log(`Handling task completion for team ${selectedTeam}, event index: ${eventIndex}, event type: ${tileData?.event_type?.[eventIndex] || tileData?.event_type}`);
 
     // Initial message setup
     let finalMessage = `Task completed for team ${selectedTeam}.\n`;
 
     // Determine the type of event being completed
-    const eventType = tileData.event_type[eventIndex];
+    const eventType = Array.isArray(tileData?.event_type) ? tileData.event_type[eventIndex] : tileData?.event_type;
     
     // Handle event completion based on the event type
+    if (!eventType) {
+      console.error('Invalid event type or tile data.');
+      return interaction.editReply({ content: 'An error occurred while completing the task. Please try again later.', ephemeral: true });
+    }
+
     if (eventType === 'boss') {
       const bossCompletionMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
       finalMessage += bossCompletionMessage ? bossCompletionMessage : 'Boss completed.\n';
@@ -214,11 +219,15 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
 
     // Update the event index or move to the next event
     eventIndex++;
-    if (eventIndex < tileData.event_type.length) {
-      // If there are more events, send the next event on the tile
-      await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex);
+    if (Array.isArray(tileData.event_type) && eventIndex < tileData.event_type.length) {
+      // Send the next event on the tile
+      await sendMapAndEvent(selectedTeam, tileData.location || 'A5', interaction, interaction.channel, eventIndex);
     } else {
       // All events are completed, allow direction choice
+      if (!tileData.location) {
+        console.error('Tile location is undefined.');
+        return interaction.editReply({ content: 'Error: Tile location is missing. Please contact an admin.', ephemeral: true });
+      }
       await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex, true);
       finalMessage += `All tasks completed! You can now choose a direction.`;
     }
