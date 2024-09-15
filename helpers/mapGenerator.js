@@ -81,8 +81,6 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
       const teamIconURL = `${settings.teamIconBaseURL}${team.teamName}.png`;
 
-      console.log(`Placing icon for team ${team.teamName} at X=${iconX}, Y=${iconY}`);
-
       try {
         const iconImage = await loadImage(teamIconURL);
         ctx.drawImage(iconImage, iconX, iconY, 32, 32);
