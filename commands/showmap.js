@@ -1,7 +1,7 @@
 // showmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
-const { generateMapImage } = require('../core/mapGenerator');
+const { generateMapImage } = require('../helpers/mapGenerator');
 const databaseHelper = require('../helpers/databaseHelper');
 const teamManager = require('../helpers/teamManager');
 const { isAdmin } = require('../helpers/permissionHelper');  // Import the helper check

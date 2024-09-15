@@ -1,7 +1,7 @@
 // showexploredmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
-const { generateMapImage } = require('../core/mapGenerator');
+const { generateMapImage } = require('../helpers/mapGenerator');
 const { isAdmin } = require('../helpers/permissionHelper');  // Import the helper check
 
 module.exports = {

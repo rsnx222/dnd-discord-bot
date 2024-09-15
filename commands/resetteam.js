@@ -2,8 +2,8 @@
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { generateEventMessage, handleEventCompletion } = require('../core/eventManager');
-const { generateMapImage } = require('../core/mapGenerator');
+const { generateEventMessage, handleEventCompletion } = require('../helpers/eventManager');
+const { generateMapImage } = require('../helpers/mapGenerator');
 const teamManager = require('../helpers/teamManager');
 const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
 

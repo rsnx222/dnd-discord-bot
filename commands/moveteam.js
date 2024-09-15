@@ -2,7 +2,7 @@
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { calculateNewTile } = require('../core/movementLogic');
+const { calculateNewTile } = require('../helpers/movementLogic');
 const { isHelper } = require('../helpers/permissionHelper');
 const { sendMapAndEvent } = require('../helpers/teamMovementHelper');
 const teamManager = require('../helpers/teamManager');
