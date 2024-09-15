@@ -1,12 +1,9 @@
-const { checkUserPermissions } = require('../helpers/roleChecks');
-
-const { handleError } = require('../helpers/errorHandler');
-
 // getpositions.js
 
 const { SlashCommandBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const settings = require('../config/settings');
+const { handleError } = require('../helpers/errorHandler');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -22,7 +19,7 @@ module.exports = {
 
       // Check if there is data
       if (!teamData || teamData.length === 0) {
-        throw new Error('No team data returned from the database.');
+        handleError('No team data returned from the database.');
       }
 
       let locations = 'Current Team Locations:\n';

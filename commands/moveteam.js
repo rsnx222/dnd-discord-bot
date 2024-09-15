@@ -1,15 +1,12 @@
-const { checkUserPermissions } = require('../helpers/roleChecks');
-
-const { handleError } = require('../helpers/errorHandler');
-
 // moveteam.js
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../helpers/movementLogic');
-const { checkUserPermissions } = require('../helpers/permissionHelper');
 const teamManager = require('../helpers/teamManager');
 const { sendMapAndEvent, handleCompleteTask } = require('../helpers/teamMovementHelper');
+const { handleError } = require('../helpers/errorHandler');
+const { checkUserPermissions } = require('../helpers/roleChecks');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,7 +20,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!checkUserPermissions(interaction.member)) {
+    if (!checkUserPermissions(interaction.member, 'admin')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
@@ -62,7 +59,7 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          throw new Error(`Could not find current location for team ${selectedTeam}`);
+          handleError(`Could not find current location for team ${selectedTeam}`, error);
         }
 
         const currentLocation = team.currentLocation;
@@ -95,7 +92,7 @@ module.exports = {
     } else if (action === 'complete') {
       // Task completion logic (Minimal addition to check for "complete" action)
       try {
-        if (!checkUserPermissions(interaction.member)) {
+        if (!checkUserPermissions(interaction.member, 'helper')) {
           return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
         }
 
@@ -103,7 +100,7 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          throw new Error(`Could not find current location for team ${selectedTeam}`);
+          handleError(`Could not find current location for team ${selectedTeam}`, error);
         }
 
         const currentTile = team.currentLocation;

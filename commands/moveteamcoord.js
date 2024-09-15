@@ -4,7 +4,7 @@ const { handleError } = require('../helpers/errorHandler');
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { checkUserPermissions } = require('../helpers/permissionHelper');
+const { checkUserPermissions } = require('../helpers/roleChecks');
 const { sendMapAndEvent } = require('../helpers/teamMovementHelper');
 const teamManager = require('../helpers/teamManager');
 
@@ -20,7 +20,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!checkUserPermissions(interaction.member)) {
+    if (!checkUserPermissions(interaction.member, 'admin')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
