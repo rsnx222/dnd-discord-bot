@@ -161,6 +161,46 @@ async function sendMapAndEvent(selectedTeam, newTile, interaction, channel, even
   }
 }
 
+// Handler for task completion (boss, challenge, etc.)
+async function handleCompleteTask(interaction, selectedTeam, tileData, eventIndex) {
+  try {
+    // Check if the user is a helper/admin
+    if (!isHelper(interaction.member)) {
+      return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
+    }
+
+    // Mark the task as complete (e.g., boss, challenge)
+    let completionMessage;
+    const eventType = tileData.event_type[eventIndex];
+    
+    if (eventType === 'boss') {
+      completionMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam); // Handle boss completion
+    } else {
+      completionMessage = `The ${eventType} has been marked as complete!`;
+    }
+
+    // Apply any rewards if needed
+    const rewardMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
+
+    // Update the event index or move to the next event
+    eventIndex++;
+    if (eventIndex < tileData.event_type.length) {
+      // Send the next event on the tile
+      await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex);
+    } else {
+      // All events are completed, allow direction choice
+      await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex, true);
+    }
+
+    // Send success message
+    await interaction.editReply({ content: `Task completed! ${rewardMessage}`, ephemeral: true });
+  } catch (error) {
+    console.error('Error handling task completion:', error);
+    await interaction.editReply({ content: 'Failed to complete the task. Please try again later.', ephemeral: true });
+  }
+}
+
+
 module.exports = {
   generateEventButtons,
   generateEventEmbed,
