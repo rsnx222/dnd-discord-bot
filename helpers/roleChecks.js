@@ -1,17 +1,17 @@
 
 // roleChecks.js
 
-const { isOwner, isAdmin, isHelper } = require('./permissionHelper');
+const { checkUserPermissions, checkUserPermissions, checkUserPermissions } = require('./permissionHelper');
 
 // Centralized role checks for various permissions
 function checkUserPermissions(user, role) {
     switch(role) {
         case 'owner':
-            return isOwner(user);
+            return checkUserPermissions(user);
         case 'admin':
-            return isAdmin(user);
+            return checkUserPermissions(user);
         case 'helper':
-            return isHelper(user);
+            return checkUserPermissions(user);
         default:
             return false;
     }
