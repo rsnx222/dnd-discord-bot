@@ -80,7 +80,8 @@ async function updateExploredTiles(teamName, newTiles) {
 
 // Function to fetch tile data from tiles.js
 function getTileData(tileName) {
-  const tileData = tiles.tiles[tileName];
+  console.log(`Fetching data for tile: ${tileName}`);  // Log the tile being fetched
+  const tileData = tiles[tileName];  // Access the tile directly
   if (!tileData) {
     console.error(`No data found for tile ${tileName}`);
     return null;  // Return null if tile does not exist
