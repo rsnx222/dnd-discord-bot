@@ -2,7 +2,7 @@
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { generateEventMessage, handleEventCompletion, handleEventFailure } = require('../core/eventManager');
+const { generateEventMessage, handleEventCompletion } = require('../core/eventManager');
 const { generateMapImage } = require('../core/mapGenerator');
 const teamManager = require('../helpers/teamManager');
 const { isHelper } = require('../helpers/permissionHelper');
@@ -81,8 +81,11 @@ module.exports = {
       const channel = await interaction.client.channels.fetch(channelId);
 
       if (channel) {
-        await channel.send(eventMessage);
+        // Always send the map to the team's channel after moving
         await channel.send({ files: [mapImagePath] });
+
+        // Send the event message if there's an event on the tile
+        await channel.send(eventMessage);
 
         // Handle the completion and reward logic if there's an event
         if (tileData && tileData.event_type) {
