@@ -1,5 +1,8 @@
 // eventManager.js
 
+const { rollForReward } = require('../core/rewardsManager');
+const { applyRandomPenalty } = require('../core/penaltiesManager');
+
 function generateEventMessage(tileData) {
   if (!tileData || !tileData.event_type) {
     return 'You have arrived at a new tile, but there is no information available about it.';
@@ -21,6 +24,73 @@ function generateEventMessage(tileData) {
   }
 }
 
+// Function to handle completing an event
+async function handleEventCompletion(tileData, team) {
+  const reward = rollForReward(tileData.event_type);
+  let message = '';
+
+  if (reward) {
+    message += `Congratulations! Your team earned a reward: ${reward}\n`;
+    // Apply the reward logic if necessary (could be tied to specific mechanics)
+  } else {
+    message += 'No reward was earned this time.\n';
+  }
+
+  return message;
+}
+
+// Function to handle event failure/forfeit
+async function handleEventFailure(tileData, team) {
+  let message = 'The event was forfeited or failed. A penalty will be applied.\n';
+  const penalty = await applyRandomPenalty(team.teamName);
+
+  if (penalty) {
+    message += `Penalty applied: ${penalty}\n`;
+  } else {
+    message += 'No penalty applied this time.';
+  }
+
+  return message;
+}
+
+// Handle boss completion
+async function handleBossCompletion(team) {
+  return `The boss has been defeated! Well done, ${team.teamName}.`;
+}
+
+// Handle challenge completion
+async function handleChallengeCompletion(team) {
+  return `You have successfully completed the challenge! Well done, ${team.teamName}.`;
+}
+
+// Handle puzzle completion
+async function handlePuzzleCompletion(team, answer) {
+  // Check if the answer is correct (you would likely store correct answers somewhere)
+  const correctAnswer = 'riddle answer'; // Example correct answer
+  if (answer.toLowerCase() === correctAnswer.toLowerCase()) {
+    return `Correct! You have successfully completed the puzzle, ${team.teamName}.`;
+  } else {
+    return `Incorrect! Please try again, ${team.teamName}.`;
+  }
+}
+
+// Handle quest completion
+async function handleQuestCompletion(team) {
+  return `You have completed the quest! Congratulations, ${team.teamName}.`;
+}
+
+// Handle transport link usage
+async function handleTransportUsage(team, tileData) {
+  return `You used the transport link and have been moved to a new tile, ${team.teamName}. The journey continues...`;
+}
+
 module.exports = {
   generateEventMessage,
+  handleEventCompletion,
+  handleEventFailure,
+  handleBossCompletion,
+  handleChallengeCompletion,
+  handlePuzzleCompletion,
+  handleQuestCompletion,
+  handleTransportUsage,
 };

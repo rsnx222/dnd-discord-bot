@@ -1,6 +1,8 @@
+// moveteamcoord.js
+
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { generateEventMessage } = require('../core/eventManager');
+const { generateEventMessage, handleEventCompletion, handleEventFailure } = require('../core/eventManager');
 const { generateMapImage } = require('../core/mapGenerator');
 const teamManager = require('../helpers/teamManager');
 const { isHelper } = require('../helpers/permissionHelper');
@@ -41,7 +43,6 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    // Ensure that this modal handler only processes modals starting with 'moveteamcoord_'
     if (!interaction.customId.startsWith('moveteamcoord_')) return;
 
     const selectedTeam = interaction.customId.split('_').pop();  // Extract the team name
@@ -82,6 +83,12 @@ module.exports = {
       if (channel) {
         await channel.send(eventMessage);
         await channel.send({ files: [mapImagePath] });
+
+        // Handle the completion and reward logic if there's an event
+        if (tileData && tileData.event_type) {
+          const completionMessage = await handleEventCompletion(tileData, team);
+          await channel.send(completionMessage);
+        }
       }
 
       // Reply with success message

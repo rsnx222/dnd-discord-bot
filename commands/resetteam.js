@@ -2,9 +2,10 @@
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
+const { generateEventMessage, handleEventCompletion } = require('../core/eventManager');
+const { generateMapImage } = require('../core/mapGenerator');
 const teamManager = require('../helpers/teamManager');
 const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
-const { generateMapImage } = require('../core/mapGenerator');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,6 @@ module.exports = {
     ),  // Dynamically generate team options
 
   async execute(interaction) {
-    // Check if the user is the owner
     if (!isOwner(interaction.user)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -29,7 +29,6 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    // Ensure modal handling starts by deferring the reply
     await interaction.deferReply({ ephemeral: true });
 
     if (interaction.customId.startsWith('reset_team_modal_')) {
@@ -38,7 +37,6 @@ module.exports = {
 
       // Check if the entered team name matches the selected one
       if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
-        // Log the reset action
         console.log(`Team name matches. Resetting team ${selectedTeam}.`);
 
         // Update the team's location and explored tiles
@@ -48,7 +46,7 @@ module.exports = {
         // Generate the map for the selected team
         const teamData = await databaseHelper.getTeamData();
         const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-        const mapImagePath = await generateMapImage(filteredTeamData, false); // Show only this team's tiles
+        const mapImagePath = await generateMapImage(filteredTeamData, false);
 
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
 
@@ -56,7 +54,7 @@ module.exports = {
           const channel = await interaction.client.channels.fetch(channelId);
 
           if (channel) {
-            // Send a cryptic, fun, welcoming message after the map is updated
+            // Send the map and a welcome message
             const welcomeMessage = `
               Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
               You find a crumpled note on the ground - you can barely make out the sentence:
@@ -65,19 +63,21 @@ module.exports = {
 
               (P.S. The first tile to the east holds a challenge...)
             `;
-
             await channel.send(welcomeMessage);
             await channel.send({ files: [mapImagePath] });
           }
         }
 
-        // Send the success message to the user
+        // Event completion or penalty logic, if necessary
+        const tileData = await databaseHelper.getTileData('A5');
+        if (tileData && tileData.event_type) {
+          const completionMessage = await handleEventCompletion(tileData, teamData.find(t => t.teamName === selectedTeam));
+          await interaction.followUp({ content: completionMessage, ephemeral: true });
+        }
+
         await interaction.editReply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
-        // Log team name mismatch
         console.log('Team name mismatch.');
-
-        // Send the error message when team name doesn't match
         await interaction.editReply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
     }
@@ -91,7 +91,7 @@ function createConfirmationModal(customId, inputId, labelText) {
     .setTitle('Confirm Reset');
 
   const textInput = new TextInputBuilder()
-    .setCustomId(inputId)  // Use dynamic custom input ID based on context
+    .setCustomId(inputId)
     .setLabel(labelText)
     .setStyle(TextInputStyle.Short)
     .setRequired(true);

@@ -1,56 +1,180 @@
 // tiles.js
 
 module.exports = {
-  "tiles": {
-    "B1": {
-      "event": "quest",
-      "description": "You find yourself at the edge of a bustling town. A local points you to the east, where a legendary dungeon awaits.",
-      "event_type": "quest",
-      "reward": "Map Fragment (reveals a secret route to a hidden dungeon)",
-      "penalty": "The next puzzle you encounter will be more difficult."
-    },
-    "C1": {
-      "event": "challenge",
-      "description": "An arena of legendary warriors awaits you. Only the strongest can survive the challenge ahead.",
-      "event_type": "challenge",
-      "reward": "Combat Boost (the next boss fight will be easier)",
-      "penalty": "A mysterious curse makes the next puzzle more complex."
-    },
-    "D1": {
-      "event": "dungeon",
-      "description": "The entrance to an ancient dungeon looms before you. Inside lies the key to unlocking further secrets.",
-      "event_type": "dungeon",
-      "reward": "Dungeon Key (unlocks access to the next region)",
-      "penalty": "Lose access to the transport link for one turn."
-    },
-    "C2": {
-      "event": "boss",
-      "description": "An ominous figure blocks your path. Defeat this boss to gain access to new regions.",
-      "event_type": "boss",
-      "reward": "Boss Drop (required to progress to the final region)",
-      "penalty": "The team’s movement is restricted to westward tiles."
-    },
-    "D2": {
-      "event": "boss",
-      "description": "A fearsome beast guards this territory. Only through defeating it can you progress.",
-      "event_type": "boss",
-      "reward": "Golden Amulet (grants the ability to bypass a challenge)",
-      "penalty": "Your team is blocked from moving north."
-    },
-    "B3": {
-      "event": "boss",
-      "description": "A powerful boss resides here, known for its dangerous attacks. Defeat it to collect the necessary drop.",
-      "event_type": "boss",
-      "reward": "Mystic Artifact (used to unlock a hidden tile)",
-      "penalty": "The next boss encounter will be more difficult."
-    },
-    "C3": {
-      "event": "transport",
-      "description": "A shimmering portal connects this area to a distant part of the island.",
-      "event_type": "transport",
-      "reward": "Teleportation Rune (can be used to skip one transport tile)",
-      "penalty": "The portal malfunctions and sends you back to a previous tile."
-    },
-    // Continue defining other tiles...
-  }
+  A4: {
+    event_type: 'challenge',
+    description: 'Survive the wilderness and defeat 100 ice giants.',
+    task: 'Show screenshots of before and after your team’s kill count of 100 Ice Giants.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  A6: {
+    event_type: 'challenge',
+    description: 'Complete 5 easy clue scrolls within 24 hours.',
+    task: 'Provide screenshots before and after for each clue completion.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  A8: {
+    event_type: 'quest',
+    description: 'Begin a quest to uncover the secrets of the forgotten temple.',
+    task: 'Solve a series of in-game puzzles and riddles to unlock further quest steps.',
+    rewards: ['Teleport to a distant tile', 'Unlock special path'],
+    penalties: ['Teleport to a random tile', 'Extra challenge on next tile', 'Movement restriction for 24 hours'],
+  },
+  A9: {
+    event_type: 'boss',
+    description: 'Defeat the Kraken lurking in the underwater temple.',
+    task: 'Provide screenshots of defeating Kraken and acquiring its rare loot.',
+    rewards: ['Double rewards from next boss', 'Unlock special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  B1: {
+    event_type: 'transport link',
+    description: 'Set sail across the sea to B4. Choose your course wisely.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  B3: {
+    event_type: 'boss',
+    description: 'Defeat the dragon slumbering in its lair.',
+    task: 'Post screenshots of the final kill and drop evidence of the dragon’s hoard.',
+    rewards: ['Double rewards from next boss', 'Unlock special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  B4: {
+    event_type: ['challenge', 'transport link'],
+    description: 'Defeat the 50 hill giants before you set sail across the sea to B1.',
+    task: 'Submit screenshots before and after your team defeats 50 Hill Giants.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  B5: {
+    event_type: 'boss',
+    description: 'Conquer the mighty Kalphite Queen deep underground.',
+    task: 'Provide screenshots showing the Kalphite Queen’s defeat and a rare drop.',
+    rewards: ['Double rewards from next boss', 'Unlock a new special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  B6: {
+    event_type: ['boss', 'transport link'],
+    description: 'Fight the Abyssal Sire before using the tunnel to C6.',
+    task: 'Post a kill screenshot of the Abyssal Sire and evidence of an Abyssal drop.',
+    rewards: ['Double rewards from next boss', 'Unlock a new special ability'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  B8: {
+    event_type: 'boss',
+    description: 'Defeat the Corporeal Beast lurking in the shadowed caverns.',
+    task: 'Provide proof of defeating the Corporeal Beast and acquiring a rare drop.',
+    rewards: ['Double rewards from next boss', 'Unlock special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  C1: {
+    event_type: 'challenge',
+    description: 'Complete 5 medium clue scrolls in 24 hours.',
+    task: 'Provide before and after screenshots of each clue completion.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  C3: {
+    event_type: 'transport link',
+    description: 'Sail across the small sea to C4.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  C4: {
+    event_type: 'transport link',
+    description: 'Sail across the small sea to C3.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  C5: {
+    event_type: 'quest',
+    description: 'Continue your journey into the forgotten temple questline.',
+    task: 'Solve the second puzzle and retrieve the ancient scrolls.',
+    rewards: ['Unlock special path', 'Teleport to a distant tile'],
+    penalties: ['Teleport to a random tile', 'Extra challenge on next tile', 'Movement restriction for 24 hours'],
+  },
+  C6: {
+    event_type: 'transport link',
+    description: 'Use the tunnel from B6 to C6.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  C7: {
+    event_type: 'transport link',
+    description: 'Enter the underwater tunnel leading to C9.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  C8: {
+    event_type: ['challenge', 'transport link'],
+    description: 'Complete 5 hard clue scrolls or use the underwater tunnel to A9.',
+    task: 'Submit screenshots of completing 5 hard clue scrolls.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  C9: {
+    event_type: 'transport link',
+    description: 'Travel through the underwater tunnel to C7.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  C10: {
+    event_type: 'challenge',
+    description: 'Defeat 150 Abyssal Demons.',
+    task: 'Submit a kill count screenshot before and after the task is completed.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
+  D1: {
+    event_type: 'transport link',
+    description: 'Travel along the river to D4.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  D2: {
+    event_type: 'boss',
+    description: 'Defeat the Chaos Elemental.',
+    task: 'Submit a kill screenshot and proof of obtaining a rare drop.',
+    rewards: ['Double rewards from next boss', 'Unlock special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  D4: {
+    event_type: 'transport link',
+    description: 'Travel along the river to D1.',
+    task: null,
+    rewards: ['Free transport to a distant tile', 'Teleport to any explored tile'],
+    penalties: null,
+  },
+  D5: {
+    event_type: 'boss',
+    description: 'Defeat the Vorkath.',
+    task: 'Submit a screenshot of killing Vorkath and evidence of a unique drop.',
+    rewards: ['Double rewards from next boss', 'Unlock special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  D9: {
+    event_type: 'boss',
+    description: 'Slay the Queen Black Dragon.',
+    task: 'Submit proof of defeating the Queen Black Dragon and acquiring a unique drop.',
+    rewards: ['Double rewards from next boss', 'Unlock a special ability'],
+    penalties: ['Teleport to a random tile', 'Movement restriction for 24 hours', 'Extra challenge on next tile'],
+  },
+  E6: {
+    event_type: 'challenge',
+    description: 'Complete 3 elite clue scrolls.',
+    task: 'Submit before and after screenshots of each elite clue scroll completion.',
+    rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
+    penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
+  },
 };
+
