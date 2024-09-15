@@ -67,7 +67,7 @@ module.exports = {
         const newTile = calculateNewTile(currentLocation, action);
 
         if (!newTile) {
-          return interaction.update({
+          return interaction.editReply({
             content: 'Invalid move. The team cannot move in that direction.',
           });
         }
@@ -85,13 +85,13 @@ module.exports = {
           await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
         }
 
-        await interaction.update({
+        await interaction.editReply({
           content: `Team ${selectedTeam} moved to ${newTile}.`,
         });
 
       } catch (error) {
         handleError(`Error moving team ${selectedTeam}:`, interaction);
-        await interaction.update({
+        await interaction.editReply({
           content: 'Failed to move the team. Please try again later.',
         });
       }
@@ -116,13 +116,13 @@ module.exports = {
         // Call the task completion logic from eventManager (handleCompleteTask was correct)
         await handleCompleteTask(interaction, selectedTeam, tileData, 0);  // Assuming eventIndex is 0
 
-        await interaction.update({
+        await interaction.editReply({
           content: `Task completed for team ${selectedTeam}.`,
           ephemeral: true,
         });
       } catch (error) {
         handleError(`Error completing task for team ${selectedTeam}:`, interaction);
-        await interaction.update({
+        await interaction.editReply({
           content: 'Failed to complete the task. Please try again later.',
           ephemeral: true,
         });
@@ -130,5 +130,5 @@ module.exports = {
     }
   }
 
-
+  
 };
