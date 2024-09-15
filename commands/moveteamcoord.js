@@ -4,6 +4,7 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const databaseHelper = require('../helpers/databaseHelper');
 const { isHelper } = require('../helpers/permissionHelper');
 const { sendMapAndEvent } = require('../helpers/teamMovementHelper');
+const teamManager = require('../helpers/teamManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
