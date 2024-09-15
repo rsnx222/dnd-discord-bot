@@ -46,7 +46,7 @@ module.exports = {
     }
   },
 
-async handleButton(interaction) {
+  async handleButton(interaction) {
     const selectedTeam = interaction.customId.split('_').pop();
     const action = interaction.customId.split('_')[0];  // Extracts the action (e.g., 'north', 'complete')
 
@@ -67,7 +67,7 @@ async handleButton(interaction) {
         const newTile = calculateNewTile(currentLocation, action);
 
         if (!newTile) {
-          return interaction.editReply({
+          return interaction.update({
             content: 'Invalid move. The team cannot move in that direction.',
           });
         }
@@ -84,9 +84,14 @@ async handleButton(interaction) {
           // Start with the first event
           await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
         }
+
+        await interaction.update({
+          content: `Team ${selectedTeam} moved to ${newTile}.`,
+        });
+
       } catch (error) {
         handleError(`Error moving team ${selectedTeam}:`, interaction);
-        await interaction.editReply({
+        await interaction.update({
           content: 'Failed to move the team. Please try again later.',
         });
       }
@@ -111,20 +116,19 @@ async handleButton(interaction) {
         // Call the task completion logic from eventManager (handleCompleteTask was correct)
         await handleCompleteTask(interaction, selectedTeam, tileData, 0);  // Assuming eventIndex is 0
 
-        await interaction.editReply({
+        await interaction.update({
           content: `Task completed for team ${selectedTeam}.`,
           ephemeral: true,
         });
       } catch (error) {
         handleError(`Error completing task for team ${selectedTeam}:`, interaction);
-        await interaction.editReply({
+        await interaction.update({
           content: 'Failed to complete the task. Please try again later.',
           ephemeral: true,
         });
       }
     }
   }
-
 
 
 };
