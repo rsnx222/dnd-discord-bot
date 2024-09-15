@@ -18,8 +18,8 @@ async function handleError(error, interaction, customMessage = 'An error occurre
             // Otherwise, use reply if available
             await interaction.reply({ content: customMessage, ephemeral: true });
         } else {
-            // If none of the above methods are available, log a warning
-            logger.warn('Unsupported interaction type or missing reply function');
+            // Log an error if interaction is unsupported or missing reply function
+            logger.error('Unsupported interaction type or missing reply function');
         }
     } catch (err) {
         logger.error('Failed to handle interaction error', err);
