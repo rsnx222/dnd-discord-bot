@@ -1,3 +1,7 @@
+const { checkUserPermissions } = require('../helpers/roleChecks');
+
+const { handleError } = require('../helpers/errorHandler');
+
 // getpositions.js
 
 const { SlashCommandBuilder } = require('discord.js');
@@ -29,7 +33,7 @@ module.exports = {
 
         // Check for undefined values in the row
         if (!teamName || !currentLocation) {
-          console.error('Team name or location is undefined');
+          handleError('Team name or location is undefined');
           locations += 'Error: team name or location is missing.\n';
         } else {
           const emoji = settings.teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji is found
@@ -39,7 +43,7 @@ module.exports = {
 
       await interaction.editReply({ content: locations });
     } catch (error) {
-      console.error('Error fetching data from the database:', error);
+      handleError('Error fetching data from the database:', error);
       await interaction.editReply({ content: 'Failed to fetch team positions from the database.' });
     }
   },

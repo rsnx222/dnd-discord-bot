@@ -1,3 +1,7 @@
+const { checkUserPermissions } = require('../helpers/roleChecks');
+
+const { handleError } = require('../helpers/errorHandler');
+
 // resetteam.js
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
@@ -5,7 +9,7 @@ const databaseHelper = require('../helpers/databaseHelper');
 const { handleEventCompletion } = require('../helpers/eventManager');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const teamManager = require('../helpers/teamManager');
-const { isOwner } = require('../helpers/permissionHelper'); 
+const { checkUserPermissions } = require('../helpers/permissionHelper'); 
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,7 +23,7 @@ module.exports = {
     ), 
 
   async execute(interaction) {
-    if (!isOwner(interaction.user)) {
+    if (!checkUserPermissions(interaction.user)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 

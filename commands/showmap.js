@@ -1,3 +1,5 @@
+const { handleError } = require('../helpers/errorHandler');
+
 // showmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
@@ -42,7 +44,7 @@ module.exports = {
       const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
       await interaction.editReply({ files: [imagePath] });
     } catch (error) {
-      console.error('Error generating map or fetching data:', error);
+      handleError('Error generating map or fetching data:', error);
       await interaction.editReply({ content: 'Failed to generate the map.' });
     }
   }

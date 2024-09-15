@@ -1,3 +1,5 @@
+const { handleError } = require('../helpers/errorHandler');
+
 // moveteamcoord.js
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
@@ -67,7 +69,7 @@ module.exports = {
       // Send map and event starting from the first event
       await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0); // Start with the first event
     } catch (error) {
-      console.error(`Error moving team ${selectedTeam}:`, error);
+      handleError(`Error moving team ${selectedTeam}:`, error);
       await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
     }
   },

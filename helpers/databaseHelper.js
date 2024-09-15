@@ -1,3 +1,5 @@
+const { handleError } = require('../helpers/errorHandler');
+
 // databaseHelper.js
 
 const mysql = require('mysql2/promise');
@@ -27,7 +29,7 @@ async function getTeamData() {
       channelId: row.channel_id  // Ensure your table has this field
     }));
   } catch (error) {
-    console.error('Error fetching team data from database:', error);
+    handleError('Error fetching team data from database:', error);
     throw error;
   }
 }
@@ -44,7 +46,7 @@ async function getTeamChannelId(teamName) {
 
     return rows[0].channel_id;
   } catch (error) {
-    console.error('Error fetching team channel ID from database:', error);
+    handleError('Error fetching team channel ID from database:', error);
     throw error;
   }
 }
@@ -58,7 +60,7 @@ async function updateTeamLocation(teamName, newLocation) {
       [newLocation, teamName]
     );
   } catch (error) {
-    console.error('Error updating team location in the database:', error);
+    handleError('Error updating team location in the database:', error);
     throw error;
   }
 }
@@ -73,7 +75,7 @@ async function updateExploredTiles(teamName, newTiles) {
       [newTilesString, teamName]
     );
   } catch (error) {
-    console.error('Error updating explored tiles in the database:', error);
+    handleError('Error updating explored tiles in the database:', error);
     throw error;
   }
 }
@@ -83,7 +85,7 @@ function getTileData(tileName) {
   console.log(`Fetching data for tile: ${tileName}`);  // Log the tile being fetched
   const tileData = tiles[tileName];  // Access the tile directly
   if (!tileData) {
-    console.error(`No data found for tile ${tileName}`);
+    handleError(`No data found for tile ${tileName}`);
     return null;  // Return null if tile does not exist
   }
   return tileData;
@@ -98,7 +100,7 @@ async function updateTeamStatus(teamName, status) {
       [status, teamName]
     );
   } catch (error) {
-    console.error('Error updating team status in the database:', error);
+    handleError('Error updating team status in the database:', error);
     throw error;
   }
 }

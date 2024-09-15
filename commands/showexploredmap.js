@@ -1,3 +1,5 @@
+const { handleError } = require('../helpers/errorHandler');
+
 // showexploredmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
@@ -23,7 +25,7 @@ module.exports = {
 
       await interaction.editReply({ files: [imagePath] });
     } catch (error) {
-      console.error('Error generating explored map:', error);
+      handleError('Error generating explored map:', error);
       await interaction.editReply({ content: 'Failed to generate the explored map.' });
     }
   }

@@ -1,9 +1,13 @@
+const { checkUserPermissions } = require('../helpers/roleChecks');
+
+const { handleError } = require('../helpers/errorHandler');
+
 // moveteam.js
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../helpers/movementLogic');
-const { isHelper } = require('../helpers/permissionHelper');
+const { checkUserPermissions } = require('../helpers/permissionHelper');
 const teamManager = require('../helpers/teamManager');
 const { sendMapAndEvent, handleCompleteTask } = require('../helpers/teamMovementHelper');
 
@@ -19,7 +23,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isHelper(interaction.member)) {
+    if (!checkUserPermissions(interaction.member)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
@@ -40,7 +44,7 @@ module.exports = {
         components: [directionButtons],
       });
     } catch (error) {
-      console.error('Error handling movement options:', error);
+      handleError('Error handling movement options:', error);
       await interaction.editReply({ content: 'Failed to handle the command. Please try again later.' });
     }
   },
@@ -83,7 +87,7 @@ module.exports = {
           await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
         }
       } catch (error) {
-        console.error(`Error moving team ${selectedTeam}:`, error);
+        handleError(`Error moving team ${selectedTeam}:`, error);
         await interaction.editReply({
           content: 'Failed to move the team. Please try again later.',
         });
@@ -91,7 +95,7 @@ module.exports = {
     } else if (action === 'complete') {
       // Task completion logic (Minimal addition to check for "complete" action)
       try {
-        if (!isHelper(interaction.member)) {
+        if (!checkUserPermissions(interaction.member)) {
           return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
         }
 
@@ -113,7 +117,7 @@ module.exports = {
           ephemeral: true,
         });
       } catch (error) {
-        console.error(`Error completing task for team ${selectedTeam}:`, error);
+        handleError(`Error completing task for team ${selectedTeam}:`, error);
         await interaction.editReply({
           content: 'Failed to complete the task. Please try again later.',
           ephemeral: true,
