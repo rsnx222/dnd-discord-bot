@@ -127,6 +127,12 @@ async function processNextEvent(teamName, eventIndex, interaction) {
 async function sendMapAndEvent(selectedTeam, newTile, interaction, channel, eventIndex = 0, isEventCompleted = false) {
   try {
     const tileData = await databaseHelper.getTileData(newTile);
+    
+    if (!tileData) {
+      console.error(`No data found for tile ${newTile}`);
+      return interaction.editReply({ content: 'Failed to load the tile data. Please try again later.', ephemeral: true });
+    }
+
     const eventMessage = generateEventMessage(tileData);
 
     // Generate updated map
@@ -157,48 +163,58 @@ async function sendMapAndEvent(selectedTeam, newTile, interaction, channel, even
     });
   } catch (error) {
     console.error('Error sending map and event:', error);
-    throw error;
+    await interaction.editReply({ content: 'Failed to send map and event. Please try again later.', ephemeral: true });
   }
 }
+
 
 // Handler for task completion (boss, challenge, etc.)
 async function handleCompleteTask(interaction, selectedTeam, tileData, eventIndex) {
   try {
+    // Defer reply early to avoid interaction timeout errors
+    await interaction.deferReply({ ephemeral: true });
+
     // Check if the user is a helper/admin
     if (!isHelper(interaction.member)) {
-      return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
+      return interaction.editReply({ content: 'You do not have permission to complete this task.', ephemeral: true });
     }
 
     // Mark the task as complete (e.g., boss, challenge)
     let completionMessage;
     const eventType = tileData.event_type[eventIndex];
-    
+
+    // Custom handling based on the type of event (boss, challenge, puzzle)
     if (eventType === 'boss') {
       completionMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam); // Handle boss completion
+    } else if (eventType === 'challenge') {
+      completionMessage = `The challenge has been marked as complete!`;
+    } else if (eventType === 'puzzle') {
+      completionMessage = `The puzzle has been marked as complete!`;
     } else {
-      completionMessage = `The ${eventType} has been marked as complete!`;
+      completionMessage = `The ${eventType} task has been marked as complete!`;
     }
 
-    // Apply any rewards if needed
+    // Apply any rewards for task completion
     const rewardMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
 
-    // Update the event index or move to the next event
+    // Increment the event index to move to the next event on the tile
     eventIndex++;
     if (eventIndex < tileData.event_type.length) {
-      // Send the next event on the tile
+      // There are more events on this tile, so proceed to the next one
       await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex);
     } else {
-      // All events are completed, allow direction choice
+      // All events are completed, now show direction choice
       await sendMapAndEvent(selectedTeam, tileData.location, interaction, interaction.channel, eventIndex, true);
     }
 
-    // Send success message
-    await interaction.editReply({ content: `Task completed! ${rewardMessage}`, ephemeral: true });
+    // Send a final success message with task completion details
+    await interaction.editReply({ content: `${completionMessage}\n${rewardMessage}`, ephemeral: true });
   } catch (error) {
     console.error('Error handling task completion:', error);
     await interaction.editReply({ content: 'Failed to complete the task. Please try again later.', ephemeral: true });
   }
 }
+
 
 
 module.exports = {
