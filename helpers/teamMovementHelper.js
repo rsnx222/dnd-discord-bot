@@ -175,8 +175,12 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
 
     // Check if the user is a helper/admin
     if (!isHelper(interaction.member)) {
+      console.log('Permission check failed for user:', interaction.member.user.username);
       return interaction.editReply({ content: 'You do not have permission to complete this task.', ephemeral: true });
     }
+
+    // Log initial state
+    console.log(`Handling task completion for team ${selectedTeam}, event index: ${eventIndex}, event type: ${tileData.event_type[eventIndex]}`);
 
     // Initial message setup
     let finalMessage = `Task completed for team ${selectedTeam}.\n`;
@@ -186,7 +190,8 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
     
     // Handle event completion based on the event type
     if (eventType === 'boss') {
-      finalMessage += await handleEventCompletion(tileData, eventIndex, selectedTeam);
+      const bossCompletionMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
+      finalMessage += bossCompletionMessage ? bossCompletionMessage : 'Boss completed.\n';
     } else if (eventType === 'challenge') {
       finalMessage += `The challenge has been marked as complete!\n`;
     } else if (eventType === 'puzzle') {
@@ -197,11 +202,15 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
 
     // Apply any rewards for task completion
     const rewardMessage = await handleEventCompletion(tileData, eventIndex, selectedTeam);
+    console.log(`Reward message: ${rewardMessage}`);
     if (rewardMessage) {
       finalMessage += `Reward: ${rewardMessage}\n`;
     } else {
       finalMessage += 'No rewards earned this time.\n';
     }
+
+    // Log before moving to next event or direction
+    console.log(`Final message before sending: ${finalMessage}`);
 
     // Update the event index or move to the next event
     eventIndex++;
@@ -214,13 +223,15 @@ async function handleCompleteTask(interaction, selectedTeam, tileData, eventInde
       finalMessage += `All tasks completed! You can now choose a direction.`;
     }
 
-    // Finally, edit the reply once with the full message
+    // Ensure this is the only call to editReply
+    console.log(`Final editReply with message: ${finalMessage}`);
     await interaction.editReply({ content: finalMessage, ephemeral: true });
   } catch (error) {
     console.error('Error handling task completion:', error);
     await interaction.editReply({ content: 'Failed to complete the task. Please try again later.', ephemeral: true });
   }
 }
+
 
 module.exports = {
   generateEventButtons,
