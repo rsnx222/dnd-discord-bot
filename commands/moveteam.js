@@ -50,14 +50,15 @@ module.exports = {
     const selectedTeam = interaction.customId.split('_').pop();
     const action = interaction.customId.split('_')[0];  // Extracts the action (e.g., 'north', 'complete')
 
-    if (['north', 'south', 'west', 'east'].includes(action)) {
-      try {
-        // Check if the interaction has already been replied or deferred
-        if (interaction.deferred || interaction.replied) {
-          console.error('Interaction already deferred or replied');
-          return; // Exit early if the interaction has already been responded to
-        }
+    // Check if the interaction has already been replied or deferred
+    if (interaction.deferred || interaction.replied) {
+        console.error('Interaction already deferred or replied.');
+        return; // Exit early if the interaction has already been responded to
+    }
 
+    if (['north', 'south', 'west', 'east'].includes(action)) {
+      // Movement button logic
+      try {
         await interaction.deferReply({ ephemeral: true });
 
         const teamData = await databaseHelper.getTeamData();
