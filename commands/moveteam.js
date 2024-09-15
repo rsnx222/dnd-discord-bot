@@ -51,8 +51,13 @@ module.exports = {
     const action = interaction.customId.split('_')[0];  // Extracts the action (e.g., 'north', 'complete')
 
     if (['north', 'south', 'west', 'east'].includes(action)) {
-      // Movement button logic
       try {
+        // Check if the interaction has already been replied or deferred
+        if (interaction.deferred || interaction.replied) {
+          console.error('Interaction already deferred or replied');
+          return; // Exit early if the interaction has already been responded to
+        }
+
         await interaction.deferReply({ ephemeral: true });
 
         const teamData = await databaseHelper.getTeamData();
@@ -91,9 +96,11 @@ module.exports = {
 
       } catch (error) {
         handleError(`Error moving team ${selectedTeam}:`, interaction);
-        await interaction.editReply({
-          content: 'Failed to move the team. Please try again later.',
-        });
+        if (!interaction.replied) {
+          await interaction.editReply({
+            content: 'Failed to move the team. Please try again later.',
+          });
+        }
       }
     } else if (action === 'complete') {
       // Task completion logic
@@ -122,13 +129,14 @@ module.exports = {
         });
       } catch (error) {
         handleError(`Error completing task for team ${selectedTeam}:`, interaction);
-        await interaction.editReply({
-          content: 'Failed to complete the task. Please try again later.',
-          ephemeral: true,
-        });
+        if (!interaction.replied) {
+          await interaction.editReply({
+            content: 'Failed to complete the task. Please try again later.',
+            ephemeral: true,
+          });
+        }
       }
     }
   }
 
-  
 };
