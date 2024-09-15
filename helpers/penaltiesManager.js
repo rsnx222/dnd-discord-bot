@@ -1,6 +1,6 @@
 // penaltiesManager.js
 
-const { movementPenalty, extraChallengePenalty, teleportPenalty } = require('./movementLogic');
+const { movementPenalty, extraChallengePenalty, teleportPenalty } = require('../core/movementLogic');
 
 const penaltyOptions = [
   'movementPenalty',
