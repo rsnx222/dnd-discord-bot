@@ -1,7 +1,7 @@
 // eventManager.js
 
-const { rollForReward } = require('../core/rewardsManager');
-const { applyRandomPenalty } = require('../core/penaltiesManager');
+const { rollForReward } = require('../helpers/rewardsManager');
+const { applyRandomPenalty } = require('../helpers/penaltiesManager');
 
 function generateEventMessage(tileData) {
   if (!tileData || !tileData.event_type) {
