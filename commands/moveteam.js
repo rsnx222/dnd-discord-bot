@@ -46,12 +46,12 @@ module.exports = {
     }
   },
 
-  async handleButton(interaction) {
+async handleButton(interaction) {
     const selectedTeam = interaction.customId.split('_').pop();
     const action = interaction.customId.split('_')[0];  // Extracts the action (e.g., 'north', 'complete')
 
     if (['north', 'south', 'west', 'east'].includes(action)) {
-      // Movement button logic (no changes needed here)
+      // Movement button logic
       try {
         await interaction.deferReply({ ephemeral: true });
 
@@ -59,7 +59,8 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          handleError(`Could not find current location for team ${selectedTeam}`, error);
+          handleError(`Could not find current location for team ${selectedTeam}`, interaction);
+          return;  // Return immediately if team data is invalid
         }
 
         const currentLocation = team.currentLocation;
@@ -84,13 +85,13 @@ module.exports = {
           await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
         }
       } catch (error) {
-        handleError(`Error moving team ${selectedTeam}:`, error);
+        handleError(`Error moving team ${selectedTeam}:`, interaction);
         await interaction.editReply({
           content: 'Failed to move the team. Please try again later.',
         });
       }
     } else if (action === 'complete') {
-      // Task completion logic (Minimal addition to check for "complete" action)
+      // Task completion logic
       try {
         if (!checkUserPermissions(interaction.member, 'helper')) {
           return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
@@ -100,7 +101,8 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          handleError(`Could not find current location for team ${selectedTeam}`, error);
+          handleError(`Could not find current location for team ${selectedTeam}`, interaction);
+          return;  // Return immediately if team data is invalid
         }
 
         const currentTile = team.currentLocation;
@@ -114,7 +116,7 @@ module.exports = {
           ephemeral: true,
         });
       } catch (error) {
-        handleError(`Error completing task for team ${selectedTeam}:`, error);
+        handleError(`Error completing task for team ${selectedTeam}:`, interaction);
         await interaction.editReply({
           content: 'Failed to complete the task. Please try again later.',
           ephemeral: true,
@@ -122,6 +124,7 @@ module.exports = {
       }
     }
   }
+
 
 
 };
