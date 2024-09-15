@@ -4,8 +4,8 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = re
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../helpers/movementLogic');
 const { isHelper } = require('../helpers/permissionHelper');
-const { sendMapAndEvent } = require('../helpers/teamMovementHelper');
 const teamManager = require('../helpers/teamManager');
+const { sendMapAndEvent, handleCompleteTask } = require('../helpers/teamMovementHelper');
 
 module.exports = {
   data: new SlashCommandBuilder()
