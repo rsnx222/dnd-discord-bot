@@ -47,44 +47,80 @@ module.exports = {
 
   async handleButton(interaction) {
     const selectedTeam = interaction.customId.split('_').pop();
-    const direction = interaction.customId.split('_')[0];
+    const action = interaction.customId.split('_')[0];  // Extracts the action (e.g., 'north', 'complete')
 
-    try {
-      await interaction.deferReply({ ephemeral: true });
+    if (['north', 'south', 'west', 'east'].includes(action)) {
+      // Movement button logic (no changes needed here)
+      try {
+        await interaction.deferReply({ ephemeral: true });
 
-      const teamData = await databaseHelper.getTeamData();
-      const team = teamData.find(t => t.teamName === selectedTeam);
+        const teamData = await databaseHelper.getTeamData();
+        const team = teamData.find(t => t.teamName === selectedTeam);
 
-      if (!team || !team.currentLocation) {
-        throw new Error(`Could not find current location for team ${selectedTeam}`);
-      }
+        if (!team || !team.currentLocation) {
+          throw new Error(`Could not find current location for team ${selectedTeam}`);
+        }
 
-      const currentLocation = team.currentLocation;
-      const newTile = calculateNewTile(currentLocation, direction);
+        const currentLocation = team.currentLocation;
+        const newTile = calculateNewTile(currentLocation, action);
 
-      if (!newTile) {
-        return interaction.editReply({
-          content: 'Invalid move. The team cannot move in that direction.',
+        if (!newTile) {
+          return interaction.editReply({
+            content: 'Invalid move. The team cannot move in that direction.',
+          });
+        }
+
+        // Update team's location and explored tiles
+        await databaseHelper.updateTeamLocation(selectedTeam, newTile);
+        const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
+        await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
+
+        // Get team channel and send map and event
+        const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
+        const channel = await interaction.client.channels.fetch(channelId);
+        if (channel) {
+          // Start with the first event
+          await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
+        }
+      } catch (error) {
+        console.error(`Error moving team ${selectedTeam}:`, error);
+        await interaction.editReply({
+          content: 'Failed to move the team. Please try again later.',
         });
       }
+    } else if (action === 'complete') {
+      // Task completion logic (Minimal addition to check for "complete" action)
+      try {
+        if (!isHelper(interaction.member)) {
+          return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
+        }
 
-      // Update team's location and explored tiles
-      await databaseHelper.updateTeamLocation(selectedTeam, newTile);
-      const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
-      await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
+        const teamData = await databaseHelper.getTeamData();
+        const team = teamData.find(t => t.teamName === selectedTeam);
 
-      // Get team channel and send map and event
-      const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
-      const channel = await interaction.client.channels.fetch(channelId);
-      if (channel) {
-        // Start with the first event
-        await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Pass eventIndex = 0, isEventCompleted = false
+        if (!team || !team.currentLocation) {
+          throw new Error(`Could not find current location for team ${selectedTeam}`);
+        }
+
+        const currentTile = team.currentLocation;
+        const tileData = await databaseHelper.getTileData(currentTile);
+        
+        // Call the task completion logic from eventManager (handleCompleteTask was correct)
+        await handleCompleteTask(interaction, selectedTeam, tileData, 0);  // Assuming eventIndex is 0
+
+        await interaction.editReply({
+          content: `Task completed for team ${selectedTeam}.`,
+          ephemeral: true,
+        });
+      } catch (error) {
+        console.error(`Error completing task for team ${selectedTeam}:`, error);
+        await interaction.editReply({
+          content: 'Failed to complete the task. Please try again later.',
+          ephemeral: true,
+        });
       }
-    } catch (error) {
-      console.error(`Error moving team ${selectedTeam}:`, error);
-      await interaction.editReply({
-        content: 'Failed to move the team. Please try again later.',
-      });
     }
   }
+
+
 };
