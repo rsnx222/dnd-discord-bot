@@ -9,7 +9,7 @@ function generateEventMessage(tileData, eventIndex = 0) {
   }
 
   const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
-  const currentEventType = eventTypes[eventIndex] || eventTypes[0]; // Default to the first event if index is out of bounds
+  const currentEventType = eventTypes[eventIndex] || eventTypes[0];
   let message = '';
 
   switch (currentEventType.toLowerCase()) {
@@ -66,6 +66,27 @@ async function handleEventFailure(tileData, eventIndex, team) {
   return message;
 }
 
+// Function to complete or forfeit events based on the event type
+async function handleEventAction(action, tileData, eventIndex, team, answer = null) {
+  const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
+  const currentEventType = eventTypes[eventIndex] || eventTypes[0];
+
+  switch (currentEventType.toLowerCase()) {
+    case 'boss':
+      return action === 'complete' ? await handleBossCompletion(team) : await handleEventFailure(tileData, eventIndex, team);
+    case 'challenge':
+      return action === 'complete' ? await handleChallengeCompletion(team) : await handleEventFailure(tileData, eventIndex, team);
+    case 'puzzle':
+      return action === 'complete' ? await handlePuzzleCompletion(team, answer) : await handleEventFailure(tileData, eventIndex, team);
+    case 'quest':
+      return action === 'complete' ? await handleQuestCompletion(team) : await handleEventFailure(tileData, eventIndex, team);
+    case 'transport link':
+      return await handleTransportUsage(team, tileData);
+    default:
+      return 'Invalid event type.';
+  }
+}
+
 // Handle boss completion
 async function handleBossCompletion(team) {
   return `The boss has been defeated! Well done, ${team.teamName}.`;
@@ -100,9 +121,5 @@ module.exports = {
   generateEventMessage,
   handleEventCompletion,
   handleEventFailure,
-  handleBossCompletion,
-  handleChallengeCompletion,
-  handlePuzzleCompletion,
-  handleQuestCompletion,
-  handleTransportUsage,
+  handleEventAction,
 };

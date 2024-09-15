@@ -89,6 +89,19 @@ function getTileData(tileName) {
   return tileData;
 }
 
+// Function to update the team's status (e.g., movement restriction)
+async function updateTeamStatus(teamName, status) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'UPDATE teams SET status = ? WHERE team_name = ?',
+      [status, teamName]
+    );
+  } catch (error) {
+    console.error('Error updating team status in the database:', error);
+    throw error;
+  }
+}
 
 // Export functions for use in bot.js
 module.exports = {
@@ -96,5 +109,6 @@ module.exports = {
   getTeamChannelId,
   updateTeamLocation,
   updateExploredTiles,
-  getTileData
+  getTileData,
+  updateTeamStatus
 };

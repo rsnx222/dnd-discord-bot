@@ -1,7 +1,7 @@
 // teamMovementHelper.js
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { generateEventMessage } = require('./eventManager');
+const { generateEventMessage, handleEventCompletion, handleEventFailure } = require('./eventManager');
 const { generateMapImage } = require('./mapGenerator');
 const databaseHelper = require('./databaseHelper');
 
@@ -67,6 +67,57 @@ function generateEventEmbed(tileData, eventIndex = 0) {
     .setColor('Random');
 }
 
+// Function to handle button interactions
+async function handleButtonInteraction(interaction) {
+  const [action, eventType, teamName] = interaction.customId.split('_');
+  const teamData = await databaseHelper.getTeamData();
+  const team = teamData.find(t => t.teamName === teamName);
+
+  if (!team) {
+    return interaction.reply({ content: `Could not find team ${teamName}`, ephemeral: true });
+  }
+
+  const currentTile = team.currentLocation;
+  const tileData = await databaseHelper.getTileData(currentTile);
+  const eventIndex = tileData.event_type.indexOf(eventType);
+
+  if (action === 'complete') {
+    const completionMessage = await handleEventCompletion(tileData, team);
+    await interaction.channel.send(completionMessage);
+    await processNextEvent(teamName, eventIndex + 1, interaction);
+  } else if (action === 'forfeit') {
+    const failureMessage = await handleEventFailure(tileData, team);
+    await interaction.channel.send(failureMessage);
+    await processNextEvent(teamName, eventIndex + 1, interaction);
+  }
+}
+
+// Function to process the next event or move
+async function processNextEvent(teamName, eventIndex, interaction) {
+  const teamData = await databaseHelper.getTeamData();
+  const team = teamData.find(t => t.teamName === teamName);
+
+  if (!team) {
+    throw new Error(`Could not find team ${teamName}`);
+  }
+
+  const currentTile = team.currentLocation;
+  const tileData = await databaseHelper.getTileData(currentTile);
+
+  if (eventIndex < tileData.event_type.length) {
+    // Show the next event
+    const channelId = await databaseHelper.getTeamChannelId(teamName);
+    const channel = await interaction.client.channels.fetch(channelId);
+    await sendMapAndEvent(teamName, currentTile, interaction, channel, eventIndex);
+  } else {
+    // All events completed, prompt for next move
+    const channelId = await databaseHelper.getTeamChannelId(teamName);
+    const channel = await interaction.client.channels.fetch(channelId);
+    const directionButtons = generateEventButtons('choose_direction', teamName, true);
+    await channel.send({ content: 'All events completed. Choose your next action.', components: [directionButtons] });
+  }
+}
+
 // Function to send map and event information to the team channel
 async function sendMapAndEvent(selectedTeam, newTile, interaction, channel, eventIndex = 0, isEventCompleted = false) {
   try {
@@ -109,4 +160,5 @@ module.exports = {
   generateEventButtons,
   generateEventEmbed,
   sendMapAndEvent,
+  handleButtonInteraction,
 };

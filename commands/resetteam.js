@@ -2,10 +2,10 @@
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { generateEventMessage, handleEventCompletion } = require('../helpers/eventManager');
+const { handleEventCompletion } = require('../helpers/eventManager');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const teamManager = require('../helpers/teamManager');
-const { isOwner } = require('../helpers/permissionHelper');  // Use isOwner for permission check
+const { isOwner } = require('../helpers/permissionHelper'); 
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,7 +16,7 @@ module.exports = {
         .setDescription('Team to reset')
         .setRequired(true)
         .addChoices(...teamManager.getTeamOptions())
-    ),  // Dynamically generate team options
+    ), 
 
   async execute(interaction) {
     if (!isOwner(interaction.user)) {
@@ -32,18 +32,15 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     if (interaction.customId.startsWith('reset_team_modal_')) {
-      const selectedTeam = interaction.customId.split('_').pop();  // Extract the team name
+      const selectedTeam = interaction.customId.split('_').pop();
       const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
 
-      // Check if the entered team name matches the selected one
       if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
         console.log(`Team name matches. Resetting team ${selectedTeam}.`);
 
-        // Update the team's location and explored tiles
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
 
-        // Generate the map for the selected team
         const teamData = await databaseHelper.getTeamData();
         const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
         const mapImagePath = await generateMapImage(filteredTeamData, false);
@@ -54,7 +51,6 @@ module.exports = {
           const channel = await interaction.client.channels.fetch(channelId);
 
           if (channel) {
-            // Send the map and a welcome message
             const welcomeMessage = `
               Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
               You find a crumpled note on the ground - you can barely make out the sentence:
@@ -68,7 +64,6 @@ module.exports = {
           }
         }
 
-        // Event completion or penalty logic, if necessary
         const tileData = await databaseHelper.getTileData('A5');
         if (tileData && tileData.event_type) {
           const completionMessage = await handleEventCompletion(tileData, teamData.find(t => t.teamName === selectedTeam));
@@ -84,7 +79,6 @@ module.exports = {
   }
 };
 
-// Helper function to create a confirmation modal
 function createConfirmationModal(customId, inputId, labelText) {
   const modal = new ModalBuilder()
     .setCustomId(customId)

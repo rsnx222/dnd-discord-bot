@@ -52,6 +52,11 @@ module.exports = {
       const teamData = await databaseHelper.getTeamData();
       const team = teamData.find(t => t.teamName === selectedTeam);
 
+      if (!team) {
+        throw new Error(`Could not find data for team ${selectedTeam}`);
+      }
+
+      // Update team's location and explored tiles
       await databaseHelper.updateTeamLocation(selectedTeam, enteredTile);
       const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
       await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
@@ -59,6 +64,7 @@ module.exports = {
       const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
       const channel = await interaction.client.channels.fetch(channelId);
 
+      // Send map and event starting from the first event
       await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0); // Start with the first event
     } catch (error) {
       console.error(`Error moving team ${selectedTeam}:`, error);
