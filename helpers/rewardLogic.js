@@ -1,6 +1,6 @@
 // rewardLogic.js
 
-const databaseHelper = require('../helpers/databaseHelper');
+const databaseHelper = require('./databaseHelper');
 
 // Simulate a dice roll (1-6)
 function rollDice() {

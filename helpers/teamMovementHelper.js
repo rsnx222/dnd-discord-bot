@@ -1,8 +1,8 @@
 // teamMovementHelper.js
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { generateEventMessage } = require('../helpers/eventManager');
-const { generateMapImage } = require('../helpers/mapGenerator');
+const { generateEventMessage } = require('./eventManager');
+const { generateMapImage } = require('./mapGenerator');
 const databaseHelper = require('./databaseHelper');
 
 // Function to generate event buttons based on event type

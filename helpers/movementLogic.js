@@ -1,6 +1,6 @@
 // movementLogic.js
 
-const databaseHelper = require('../helpers/databaseHelper');
+const databaseHelper = require('./databaseHelper');
 
 // Function to calculate the new tile after moving in a direction
 function calculateNewTile(currentTile, direction) {
