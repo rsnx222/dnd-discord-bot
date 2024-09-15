@@ -4,6 +4,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { generateEventMessage, handleEventCompletion, handleEventFailure } = require('./eventManager');
 const { generateMapImage } = require('./mapGenerator');
 const databaseHelper = require('./databaseHelper');
+const { isHelper } = require('./permissionHelper');
 
 // Function to generate event buttons based on event type
 function generateEventButtons(eventType, teamName, isEventCompleted = false) {
@@ -19,7 +20,7 @@ function generateEventButtons(eventType, teamName, isEventCompleted = false) {
   switch (eventType.toLowerCase()) {
     case 'boss':
       eventButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('Mark Boss as Complete').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('Mark Task as Complete').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`forfeit_boss_${teamName}`).setLabel('Forfeit Boss').setStyle(ButtonStyle.Danger)
       );
       break;
@@ -82,7 +83,11 @@ async function handleButtonInteraction(interaction) {
   const eventIndex = tileData.event_type.indexOf(eventType);
 
   if (action === 'complete') {
-    const completionMessage = await handleEventCompletion(tileData, team);
+    if (!isHelper(interaction.member)) {
+      return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
+    }
+
+    const completionMessage = await handleEventCompletion(tileData, eventIndex, team);
     await interaction.channel.send(completionMessage);
     await processNextEvent(teamName, eventIndex + 1, interaction);
   } else if (action === 'forfeit') {
@@ -161,4 +166,5 @@ module.exports = {
   generateEventEmbed,
   sendMapAndEvent,
   handleButtonInteraction,
+  handleCompleteTask,
 };
