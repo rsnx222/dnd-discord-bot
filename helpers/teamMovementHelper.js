@@ -5,61 +5,70 @@ const { generateEventMessage } = require('../core/eventManager');
 const { generateMapImage } = require('../core/mapGenerator');
 const databaseHelper = require('./databaseHelper');
 
-// Function to generate event buttons for multiple event types
-function generateEventButtons(eventTypes, teamName) {
-  const buttons = [];
+// Function to generate event buttons based on event type
+function generateEventButtons(eventType, teamName, isEventCompleted = false) {
+  if (isEventCompleted) {
+    // Show the "Choose Direction" or "Use Transport" buttons after events are completed
+    return new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
+    );
+  }
 
-  eventTypes.forEach(eventType => {
-    let eventButtons;
+  // Event-specific buttons
+  let eventButtons;
+  switch (eventType.toLowerCase()) {
+    case 'boss':
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('Mark Boss as Complete').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`forfeit_boss_${teamName}`).setLabel('Forfeit Boss').setStyle(ButtonStyle.Danger)
+      );
+      break;
+    case 'challenge':
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`complete_challenge_${teamName}`).setLabel('Complete Challenge').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`forfeit_challenge_${teamName}`).setLabel('Forfeit Challenge').setStyle(ButtonStyle.Danger)
+      );
+      break;
+    case 'puzzle':
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`submit_puzzle_${teamName}`).setLabel('Submit Puzzle Answer').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`forfeit_puzzle_${teamName}`).setLabel('Forfeit Puzzle').setStyle(ButtonStyle.Danger)
+      );
+      break;
+    case 'transport link':
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`use_transport_${teamName}`).setLabel('Use Transport Link').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
+      );
+      break;
+    case 'quest':
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`start_quest_${teamName}`).setLabel('Start Quest').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`forfeit_quest_${teamName}`).setLabel('Forfeit Quest').setStyle(ButtonStyle.Danger)
+      );
+      break;
+    default:
+      eventButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
+      );
+  }
 
-    switch (eventType.toLowerCase()) {
-      case 'boss':
-        eventButtons = new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('Mark Boss as Complete').setStyle(ButtonStyle.Success);
-        buttons.push(eventButtons);
-        buttons.push(new ButtonBuilder().setCustomId(`forfeit_boss_${teamName}`).setLabel('Forfeit Boss').setStyle(ButtonStyle.Danger));
-        break;
-      case 'challenge':
-        eventButtons = new ButtonBuilder().setCustomId(`complete_challenge_${teamName}`).setLabel('Complete Challenge').setStyle(ButtonStyle.Success);
-        buttons.push(eventButtons);
-        buttons.push(new ButtonBuilder().setCustomId(`forfeit_challenge_${teamName}`).setLabel('Forfeit Challenge').setStyle(ButtonStyle.Danger));
-        break;
-      case 'puzzle':
-        eventButtons = new ButtonBuilder().setCustomId(`submit_puzzle_${teamName}`).setLabel('Submit Puzzle Answer').setStyle(ButtonStyle.Success);
-        buttons.push(eventButtons);
-        buttons.push(new ButtonBuilder().setCustomId(`forfeit_puzzle_${teamName}`).setLabel('Forfeit Puzzle').setStyle(ButtonStyle.Danger));
-        break;
-      case 'transport link':
-        eventButtons = new ButtonBuilder().setCustomId(`use_transport_${teamName}`).setLabel('Use Transport Link').setStyle(ButtonStyle.Success);
-        buttons.push(eventButtons);
-        buttons.push(new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary));
-        break;
-      case 'quest':
-        eventButtons = new ButtonBuilder().setCustomId(`start_quest_${teamName}`).setLabel('Start Quest').setStyle(ButtonStyle.Success);
-        buttons.push(eventButtons);
-        buttons.push(new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary));
-        break;
-      default:
-        buttons.push(new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary));
-    }
-  });
-
-  const actionRows = new ActionRowBuilder().addComponents(buttons);
-  return actionRows;
+  return eventButtons;
 }
 
-// Function to generate the event embed for multiple events
-function generateEventEmbed(tileData) {
+// Function to generate the event embed
+function generateEventEmbed(tileData, eventIndex = 0) {
   const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
-  const eventDescriptions = eventTypes.map(eventType => `${eventType}: ${tileData.description}`);
+  const eventDescriptions = `${eventTypes[eventIndex]}: ${tileData.description}`;
 
   return new EmbedBuilder()
-    .setTitle(`Events on this tile`)
-    .setDescription(eventDescriptions.join('\n'))
+    .setTitle(`Event on this tile`)
+    .setDescription(eventDescriptions)
     .setColor('Random');
 }
 
-// Function to send map and event information to the team channel for multiple events
-async function sendMapAndEvent(selectedTeam, newTile, interaction, channel) {
+// Function to send map and event information to the team channel
+async function sendMapAndEvent(selectedTeam, newTile, interaction, channel, eventIndex = 0, isEventCompleted = false) {
   try {
     const tileData = await databaseHelper.getTileData(newTile);
     const eventMessage = generateEventMessage(tileData);
@@ -69,15 +78,22 @@ async function sendMapAndEvent(selectedTeam, newTile, interaction, channel) {
     const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
     const mapImagePath = await generateMapImage(filteredTeamData, false);
 
-    // Send event message, map, and buttons
+    // Send event message and map
     await channel.send(eventMessage);
     await channel.send({ files: [mapImagePath] });
 
-    if (tileData && tileData.event_type) {
-      const eventEmbed = generateEventEmbed(tileData);
-      const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
-      const eventButtons = generateEventButtons(eventTypes, selectedTeam);
+    // Process events sequentially, show one at a time
+    const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
+
+    if (eventIndex < eventTypes.length) {
+      // Show the current event with buttons
+      const eventEmbed = generateEventEmbed(tileData, eventIndex);
+      const eventButtons = generateEventButtons(eventTypes[eventIndex], selectedTeam, isEventCompleted);
       await channel.send({ embeds: [eventEmbed], components: [eventButtons] });
+    } else {
+      // All events are completed, show direction or transport options
+      const directionButtons = generateEventButtons('choose_direction', selectedTeam, true);
+      await channel.send({ content: 'All events completed. Choose your next action.', components: [directionButtons] });
     }
 
     await interaction.editReply({

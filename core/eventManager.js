@@ -3,41 +3,48 @@
 const { rollForReward } = require('../helpers/rewardsManager');
 const { applyRandomPenalty } = require('../helpers/penaltiesManager');
 
-function generateEventMessage(tileData) {
+function generateEventMessage(tileData, eventIndex = 0) {
   if (!tileData || !tileData.event_type) {
     return 'You have arrived at a new tile, but there is no information available about it.';
   }
 
   const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
-  const messages = eventTypes.map(eventType => {
-    switch (eventType.toLowerCase()) {
-      case 'quest':
-        return `You have discovered a quest on this tile. ${tileData.description}`;
-      case 'challenge':
-        return `Prepare yourself! This tile contains a challenge: ${tileData.description}`;
-      case 'boss':
-        return `A fearsome boss awaits on this tile. ${tileData.description}`;
-      case 'dungeon':
-        return `You have entered a dungeon. Beware of what lies ahead: ${tileData.description}`;
-      case 'transport link':
-        return `This tile has a transport link. ${tileData.description}`;
-      default:
-        return `You have encountered something on this tile: ${tileData.description}`;
-    }
-  });
+  const currentEventType = eventTypes[eventIndex] || eventTypes[0]; // Default to the first event if index is out of bounds
+  let message = '';
 
-  return messages.join('\n'); // Combine multiple event messages into one string
+  switch (currentEventType.toLowerCase()) {
+    case 'quest':
+      message = `You have discovered a quest on this tile. ${tileData.description}`;
+      break;
+    case 'challenge':
+      message = `Prepare yourself! This tile contains a challenge: ${tileData.description}`;
+      break;
+    case 'boss':
+      message = `A fearsome boss awaits on this tile. ${tileData.description}`;
+      break;
+    case 'dungeon':
+      message = `You have entered a dungeon. Beware of what lies ahead: ${tileData.description}`;
+      break;
+    case 'transport link':
+      message = `This tile has a transport link. ${tileData.description}`;
+      break;
+    default:
+      message = `You have encountered something on this tile: ${tileData.description}`;
+  }
+
+  return message;
 }
 
-
 // Function to handle completing an event
-async function handleEventCompletion(tileData, team) {
-  const reward = rollForReward(tileData.event_type);
+async function handleEventCompletion(tileData, eventIndex, team) {
+  const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
+  const currentEventType = eventTypes[eventIndex] || eventTypes[0];
+
+  const reward = rollForReward(currentEventType);
   let message = '';
 
   if (reward) {
     message += `Congratulations! Your team earned a reward: ${reward}\n`;
-    // Apply the reward logic if necessary (could be tied to specific mechanics)
   } else {
     message += 'No reward was earned this time.\n';
   }
@@ -46,7 +53,7 @@ async function handleEventCompletion(tileData, team) {
 }
 
 // Function to handle event failure/forfeit
-async function handleEventFailure(tileData, team) {
+async function handleEventFailure(tileData, eventIndex, team) {
   let message = 'The event was forfeited or failed. A penalty will be applied.\n';
   const penalty = await applyRandomPenalty(team.teamName);
 
@@ -71,7 +78,6 @@ async function handleChallengeCompletion(team) {
 
 // Handle puzzle completion
 async function handlePuzzleCompletion(team, answer) {
-  // Check if the answer is correct (you would likely store correct answers somewhere)
   const correctAnswer = 'riddle answer'; // Example correct answer
   if (answer.toLowerCase() === correctAnswer.toLowerCase()) {
     return `Correct! You have successfully completed the puzzle, ${team.teamName}.`;

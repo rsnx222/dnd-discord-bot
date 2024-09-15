@@ -59,7 +59,7 @@ module.exports = {
       const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
       const channel = await interaction.client.channels.fetch(channelId);
 
-      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel);
+      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0); // Start with the first event
     } catch (error) {
       console.error(`Error moving team ${selectedTeam}:`, error);
       await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
