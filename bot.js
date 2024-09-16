@@ -2,7 +2,7 @@
 
 const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');
 const commandManager = require('./helpers/commandManager');
-const logger = require('./helpers/logger');
+const { logger } = require('./helpers/logger');
 const settings = require('./config/settings');
 const fs = require('fs');
 const path = require('path');
