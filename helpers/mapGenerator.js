@@ -22,7 +22,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
   try {
     defaultIcon = await loadImage(`${settings.teamIconBaseURL}Black.png`);
   } catch (error) {
-    logger('Error loading default icon.', null, error);
+    logger('Error loading default icon.', error);
   }
 
   // Loop through the valid map grid (5 columns, 10 rows)
@@ -50,7 +50,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
           ctx.fillRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
         }
       } catch (error) {
-        logger(`Error loading tile image from URL: ${tileImageURL}`, null, error);
+        logger(`Error loading tile image from URL: ${tileImageURL}`, error);
       }
     }
   }
@@ -87,7 +87,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
         const iconImage = await loadImage(teamIconURL);
         ctx.drawImage(iconImage, iconX, iconY, 32, 32);
       } catch (error) {
-        logger(`Error loading team icon: ${teamIconURL}, using default icon instead.`, null, error);
+        logger(`Error loading team icon: ${teamIconURL}, using default icon instead.`, error);
         if (defaultIcon) {
           ctx.drawImage(defaultIcon, iconX, iconY, 32, 32);
         }
