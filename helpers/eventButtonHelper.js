@@ -2,6 +2,7 @@
 // eventButtonHelper.js
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { logger } = require('../helpers/logger');
 
 // Function to generate event buttons based on event type
 function generateEventButtons(eventType, teamName, isEventCompleted = false) {
@@ -34,7 +35,7 @@ function generateEventButtons(eventType, teamName, isEventCompleted = false) {
             );
             break;
         default:
-            console.error('Unknown event type for button generation.');
+            logger('Unknown event type for button generation.', error);
     }
 
     return eventButtons;

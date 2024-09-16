@@ -1,9 +1,9 @@
 // getexploredtiles.js
-
 const { SlashCommandBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const getTeams = require('../helpers/getTeams');
+const { getTeams } = require('../helpers/getTeams');
 const { checkRole } = require('../helpers/checkRole');
+const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,11 +13,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team')
         .setRequired(true)
-        .addChoices(...getTeams.getTeams())
+        .addChoices(...getTeams())
     ),
 
   async execute(interaction) {
-    // Check if the user is an helper
+    // Check if the user is a helper
     if (!checkRole(interaction.member, 'helper')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -34,30 +34,7 @@ module.exports = {
       }
 
       const exploredTiles = team.exploredTiles;
-
-      // Define the grid (5x10) for example (A1 to E10)
-      const columns = ['A', 'B', 'C', 'D', 'E'];
-      const rows = [...Array(10).keys()].map(i => i + 1); // 1 to 10
-
-      let grid = '';
-
-      // Build the grid with rectangular tiles (represented as text)
-      for (let row of rows) {
-        let rowTiles = '';
-        for (let col of columns) {
-          const tileName = `${col}${row}`;
-          const paddedTileName = row < 10 ? `${col} ${row}` : `${col}${row}`; // Add extra space for rows 1-9
-          
-          if (exploredTiles.includes(tileName)) {
-            // Explored tile -> highlight with []
-            rowTiles += `[${paddedTileName}] `;
-          } else {
-            // Unexplored tile
-            rowTiles += `${paddedTileName}   `;
-          }
-        }
-        grid += rowTiles.trim() + '\n'; // Append the row to the grid
-      }
+      const grid = generateExploredGrid(exploredTiles);
 
       // Send the grid as a reply
       await interaction.editReply({
@@ -66,7 +43,7 @@ module.exports = {
       });
       
     } catch (error) {
-      console.error('Error generating explored tiles grid:', error);
+      logger.error('Error generating explored tiles grid:', error);
       await interaction.editReply({
         content: 'Failed to load explored tiles. Please try again later.',
         ephemeral: true
@@ -74,3 +51,28 @@ module.exports = {
     }
   }
 };
+
+// Helper function to generate the grid of explored tiles
+function generateExploredGrid(exploredTiles) {
+  const columns = ['A', 'B', 'C', 'D', 'E'];
+  const rows = Array.from({ length: 10 }, (_, i) => i + 1); // 1 to 10
+
+  let grid = '';
+
+  rows.forEach(row => {
+    let rowTiles = '';
+    columns.forEach(col => {
+      const tileName = `${col}${row}`;
+      const paddedTileName = row < 10 ? `${col} ${row}` : `${col}${row}`; // Add extra space for rows 1-9
+      
+      if (exploredTiles.includes(tileName)) {
+        rowTiles += `[${paddedTileName}] `; // Explored tile
+      } else {
+        rowTiles += `${paddedTileName}   `;  // Unexplored tile
+      }
+    });
+    grid += rowTiles.trim() + '\n'; // Append the row to the grid
+  });
+
+  return grid.trim();
+}

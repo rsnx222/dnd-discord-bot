@@ -24,10 +24,15 @@ const rewards = {
   ],
 };
 
+// Roll for a reward based on event type
 function rollForReward(eventType) {
   const eventRewards = rewards[eventType.toLowerCase()];
-  if (!eventRewards) return null;
+  if (!eventRewards) {
+    console.error(`Invalid event type: ${eventType}`);
+    return null;
+  }
 
+  // Randomly select a reward and roll to determine if it is given
   const randomIndex = Math.floor(Math.random() * eventRewards.length);
   const selectedReward = eventRewards[randomIndex];
   const roll = Math.random();

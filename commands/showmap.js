@@ -1,11 +1,11 @@
-const { handleError } = require('../helpers/handleError');
+const { logger } = require('../helpers/logger');
 
 // showmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const databaseHelper = require('../helpers/databaseHelper');
-const getTeams = require('../helpers/getTeams');
+const { getTeams } = require('../helpers/getTeams');
 const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
@@ -16,7 +16,7 @@ module.exports = {
       option.setName('team')
         .setDescription('Optional: Select a team to view only their explored/unexplored tiles')
         .setRequired(false)
-        .addChoices(...getTeams.getTeams())),  // Dynamically generate team options from getTeams
+        .addChoices(...getTeams())),  // Dynamically generate team options from getTeams
 
   async execute(interaction) {
     // Check if the user is an helper
@@ -44,7 +44,7 @@ module.exports = {
       const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
       await interaction.editReply({ files: [imagePath] });
     } catch (error) {
-      handleError('Error generating map or fetching data:', error);
+      logger('Error generating map or fetching data:', error, interaction);
       await interaction.editReply({ content: 'Failed to generate the map.' });
     }
   }

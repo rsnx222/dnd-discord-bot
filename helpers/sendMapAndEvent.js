@@ -1,34 +1,35 @@
 // sendMapAndEvent.js
 
 const { generateMapImage } = require('./mapGenerator');
-const { handleError } = require('./handleError');
+const { logger } = require('./logger');
+const { generateEventMessage } = require('./eventManager'); // Assuming events are handled here
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false) {
   try {
-    // Generate the map for the current team
-    const mapImageBuffer = await generateMapImage(teamName, newTile);
+    // Fetch team data and generate the map
+    const mapImagePath = await generateMapImage([{ teamName, exploredTiles: [newTile] }], false);
     
-    // Send the map to the team's channel
+    // Send the map image to the team's channel
     await channel.send({
-      files: [{ attachment: mapImageBuffer, name: 'map.png' }],
+      files: [{ attachment: mapImagePath, name: 'map.png' }],
       content: `Team ${teamName} has moved to tile ${newTile}.`,
     });
 
-    // Optionally, handle any events if needed
+    // Handle the event at the new tile
     if (!isEventComplete) {
-      // Trigger the next event (this can be expanded based on your event logic)
-      await channel.send(`An event starts for team ${teamName} at tile ${newTile}! Event ${eventIndex}`);
+      const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
+      await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
     }
 
-    // Acknowledge the action in the interaction
-    await interaction.editReply({ content: `Map and event sent for team ${teamName}.` });
+    // Acknowledge the successful sending of the map and event
+    await interaction.editReply({ content: `Map and event sent for team ${teamName} at tile ${newTile}.` });
 
   } catch (error) {
-    handleError(`Error sending map and event for team ${teamName}:`, error);
+    logger(`Error sending map and event for team ${teamName} at tile ${newTile}:`, error);
     await interaction.editReply({ content: 'Failed to send the map and event. Please try again later.' });
   }
 }
 
 module.exports = {
-  sendMapAndEvent
+  sendMapAndEvent,
 };

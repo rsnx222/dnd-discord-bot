@@ -1,7 +1,6 @@
 // getTeams.js
 
 const { teamEmojis } = require('../config/settings');
-const databaseHelper = require('./databaseHelper'); // Import database helper if needed
 
 // Get all team options for select menus
 function getTeams() {

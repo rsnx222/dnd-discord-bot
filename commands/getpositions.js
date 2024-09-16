@@ -3,7 +3,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const settings = require('../config/settings');
-const { handleError } = require('../helpers/handleError');
+const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -14,12 +14,13 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      // Use the helper method to get team data from the database
+      // Fetch team data from the database
       const teamData = await databaseHelper.getTeamData();
 
-      // Check if there is data
+      // Handle case if no data is returned
       if (!teamData || teamData.length === 0) {
-        handleError('No team data returned from the database.');
+        logger.error('No team data returned from the database.');
+        return interaction.editReply({ content: 'No team data available.', ephemeral: true });
       }
 
       let locations = 'Current Team Locations:\n';
@@ -28,20 +29,23 @@ module.exports = {
         const teamName = row.teamName;
         const currentLocation = row.currentLocation;
 
-        // Check for undefined values in the row
+        // Handle missing or undefined values for teamName and currentLocation
         if (!teamName || !currentLocation) {
-          handleError('Team name or location is undefined');
+          logger.error('Team name or location is undefined', { teamName, currentLocation });
           locations += 'Error: team name or location is missing.\n';
         } else {
-          const emoji = settings.teamEmojis[teamName] || '🔘'; // Default to '🔘' if no emoji is found
+          // Use an emoji if available, otherwise fall back to the default '🔘'
+          const emoji = settings.teamEmojis[teamName] || '🔘';
           locations += `${emoji} ${teamName} is at ${currentLocation}\n`;
         }
       });
 
-      await interaction.editReply({ content: locations });
+      // Reply with the formatted list of team locations
+      await interaction.editReply({ content: locations, ephemeral: true });
+
     } catch (error) {
-      handleError('Error fetching data from the database:', error);
-      await interaction.editReply({ content: 'Failed to fetch team positions from the database.' });
+      logger.error('Error fetching team data from the database:', error);
+      await interaction.editReply({ content: 'Failed to fetch team positions from the database.', ephemeral: true });
     }
   },
 };

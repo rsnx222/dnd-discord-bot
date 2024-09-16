@@ -1,9 +1,9 @@
 // bot.js
 
-const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');  // Import ActivityType
-const commandManager = require('./helpers/commandManager');  // Manages loading and executing commands
-const logger = require('./helpers/logger');  // Log management
-const settings = require('./config/settings');  // Settings and configuration
+const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');
+const commandManager = require('./helpers/commandManager');
+const logger = require('./helpers/logger');
+const settings = require('./config/settings');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -26,17 +26,14 @@ const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(fil
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   
-  // If the command exports multiple commands, iterate over them
   if (Array.isArray(command.data)) {
-    command.data.forEach(cmd => {
-      client.commands.set(cmd.name, command);
-    });
+    command.data.forEach(cmd => client.commands.set(cmd.name, command));
   } else {
     client.commands.set(command.data.name, command);
   }
 }
 
-// Randomised bot activities
+// Randomized bot activities
 const activities = [
   { type: ActivityType.Playing, message: "an epic battle against bosses" },
   { type: ActivityType.Playing, message: "a dangerous dungeon crawl" },
@@ -65,82 +62,104 @@ client.once(Events.ClientReady, async () => {
   setInterval(setRandomActivity, 1800000);
 
   // Clear old commands and register the current ones from the /commands directory
-  await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-  await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
-  await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+  try {
+    await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+    await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+    await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+    logger.log('Commands registered successfully.');
+  } catch (error) {
+    logger.error('Error during command registration:', error);
+  }
 });
 
-// Handle interactions
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isCommand()) {
-    const command = client.commands.get(interaction.commandName);
+// Handle command interactions
+async function handleCommandInteraction(interaction) {
+  const command = client.commands.get(interaction.commandName);
+  if (!command) {
+    logger.error(`No command found for: ${interaction.commandName}`);
+    return;
+  }
+  
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    logger.error(`Error executing command ${interaction.commandName}:`, error);
+    await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+  }
+}
 
-    if (!command) {
-      logger.error(`No command found for: ${interaction.commandName}`);
-      return;
-    }
-
+// Handle select menu interactions
+async function handleSelectMenuInteraction(interaction) {
+  const command = client.commands.get('moveteam') || client.commands.get('resetteam');
+  if (command && typeof command.handleSelectMenu === 'function') {
     try {
-      await command.execute(interaction);
+      await command.handleSelectMenu(interaction);
     } catch (error) {
-      logger.error(`Error executing command ${interaction.commandName}:`, error);
-      await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+      logger.error('Error handling select menu interaction:', error);
+      await interaction.reply({ content: 'Failed to handle team selection.', ephemeral: true });
     }
   }
+}
 
-  // Handle select menu interaction (for team selection in moveteam or resetteam)
-  else if (interaction.isStringSelectMenu()) {
-    const command = client.commands.get('moveteam') || client.commands.get('resetteam');
+// Handle button interactions
+async function handleButtonInteraction(interaction) {
+  const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
+  if (command && typeof command.handleButton === 'function') {
+    try {
+      await command.handleButton(interaction);
+    } catch (error) {
+      logger.error('Error handling button interaction:', error);
+      await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
+    }
+  }
+}
 
-    if (command && typeof command.handleSelectMenu === 'function') {
+// Handle modal interactions
+async function handleModalInteraction(interaction) {
+  const customId = interaction.customId;
+
+  if (customId.startsWith('reset_team_modal_')) {
+    const command = client.commands.get('resetteam');
+    if (command && typeof command.handleModal === 'function') {
       try {
-        await command.handleSelectMenu(interaction);
+        await command.handleModal(interaction);
       } catch (error) {
-        logger.error('Error handling select menu interaction:', error);
-        await interaction.reply({ content: 'Failed to handle team selection.', ephemeral: true });
+        logger.error('Error handling reset modal interaction:', error);
+        await interaction.reply({ content: 'Failed to handle the reset modal.', ephemeral: true });
       }
     }
-  }
-
-  // Handle button interaction (e.g., for directional movement in moveteam)
-  else if (interaction.isButton()) {
-    const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
-
-    if (command && typeof command.handleButton === 'function') {
+  } else if (customId.startsWith('moveteamcoord_')) {
+    const command = client.commands.get('moveteamcoord');
+    if (command && typeof command.handleModal === 'function') {
       try {
-        await command.handleButton(interaction);
+        await command.handleModal(interaction);
       } catch (error) {
-        logger.error('Error handling button interaction:', error);
-        await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
+        logger.error('Error handling moveteamcoord modal interaction:', error);
+        await interaction.reply({ content: 'Failed to handle the moveteamcoord modal.', ephemeral: true });
       }
     }
   }
-    
-  // Handle modal interaction (for moveteamcoord / resetteam)
-  else if (interaction.isModalSubmit()) {
-    if (interaction.customId.startsWith('reset_team_modal_')) {
-      const command = client.commands.get('resetteam');
-      if (command && typeof command.handleModal === 'function') {
-        try {
-          await command.handleModal(interaction);
-        } catch (error) {
-          logger.error('Error handling reset modal interaction:', error);
-          await interaction.reply({ content: 'Failed to handle the reset modal.', ephemeral: true });
-        }
-      }
-    } else if (interaction.customId.startsWith('moveteamcoord_')) {
-      const command = client.commands.get('moveteamcoord');
-      if (command && typeof command.handleModal === 'function') {
-        try {
-          await command.handleModal(interaction);
-        } catch (error) {
-          logger.error('Error handling moveteamcoord modal interaction:', error);
-          await interaction.reply({ content: 'Failed to handle the moveteamcoord modal.', ephemeral: true });
-        }
-      }
+}
+
+// Main interaction handler
+client.on(Events.InteractionCreate, async (interaction) => {
+  try {
+    if (interaction.isCommand()) {
+      await handleCommandInteraction(interaction);
+    } else if (interaction.isStringSelectMenu()) {
+      await handleSelectMenuInteraction(interaction);
+    } else if (interaction.isButton()) {
+      await handleButtonInteraction(interaction);
+    } else if (interaction.isModalSubmit()) {
+      await handleModalInteraction(interaction);
     }
+  } catch (error) {
+    logger.error('Error in interaction handling:', error);
+    await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
   }
 });
 
 // Login the bot
-client.login(settings.DISCORD_TOKEN);
+client.login(settings.DISCORD_TOKEN).catch((error) => {
+  logger.error('Failed to login the bot:', error);
+});

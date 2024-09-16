@@ -3,7 +3,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const { checkRole } = require('../helpers/checkRole');  // Import the helper check
-const { handleError } = require('../helpers/handleError');
+const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,7 +24,7 @@ module.exports = {
 
       await interaction.editReply({ files: [imagePath] });
     } catch (error) {
-      handleError('Error generating explored map:', error);
+      logger('Error generating explored map:', error, interaction);
       await interaction.editReply({ content: 'Failed to generate the explored map.' });
     }
   }

@@ -4,8 +4,8 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const databaseHelper = require('../helpers/databaseHelper');
 const { checkRole } = require('../helpers/checkRole');
 const { sendMapAndEvent } = require('../helpers/sendMapAndEvent');
-const getTeams = require('../helpers/getTeams');
-const { handleError } = require('../helpers/handleError');
+const { getTeams } = require('../helpers/getTeams');
+const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,7 +15,7 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team to move')
         .setRequired(true)
-        .addChoices(...getTeams.getTeams())
+        .addChoices(...getTeams())
     ),
 
   async execute(interaction) {
@@ -54,7 +54,7 @@ module.exports = {
       const team = teamData.find(t => t.teamName === selectedTeam);
 
       if (!team) {
-        handleError(`Could not find data for team ${selectedTeam}`);
+        logger(`Could not find data for team ${selectedTeam}`);
       }
 
       // Update team's location and explored tiles
@@ -68,7 +68,7 @@ module.exports = {
       // Send map and event starting from the first event
       await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0); // Start with the first event
     } catch (error) {
-      handleError(`Error moving team ${selectedTeam}:`, error);
+      logger(`Error moving team ${selectedTeam}:`, error);
       await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
     }
   },

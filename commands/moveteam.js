@@ -3,10 +3,10 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../helpers/movementLogic');
-const getTeams = require('../helpers/getTeams');
+const { getTeams } = require('../helpers/getTeams');
 const { sendMapAndEvent } = require('../helpers/sendMapAndEvent');
 const { handleCompleteTask } = require('../helpers/taskHandler');
-const { handleError } = require('../helpers/handleError');
+const { logger } = require('../helpers/logger');
 const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team to move')
         .setRequired(true)
-        .addChoices(...getTeams.getTeams())
+        .addChoices(...getTeams())
     ),
 
   async execute(interaction) {
@@ -42,7 +42,7 @@ module.exports = {
         components: [directionButtons],
       });
     } catch (error) {
-      handleError('Error handling movement options:', error);
+      logger('Error handling movement options:', error, interaction);
       await interaction.editReply({ content: 'Failed to handle the command. Please try again later.' });
     }
   },
@@ -53,7 +53,7 @@ module.exports = {
 
     // Check if the interaction has already been replied or deferred
     if (interaction.deferred || interaction.replied) {
-        console.error('Interaction already deferred or replied.');
+        logger('Interaction already deferred or replied.');
         return; // Exit early if the interaction has already been responded to
     }
 
@@ -66,7 +66,7 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          handleError(`Could not find current location for team ${selectedTeam}`, interaction);
+          logger(`Could not find current location for team ${selectedTeam}`, interaction);
           return;  // Return immediately if team data is invalid
         }
 
@@ -97,7 +97,7 @@ module.exports = {
         });
 
       } catch (error) {
-        handleError(`Error moving team ${selectedTeam}:`, interaction);
+        logger(`Error moving team ${selectedTeam}:`, error, interaction);
         if (!interaction.replied) {
           await interaction.editReply({
             content: 'Failed to move the team. Please try again later.',
@@ -115,7 +115,7 @@ module.exports = {
         const team = teamData.find(t => t.teamName === selectedTeam);
 
         if (!team || !team.currentLocation) {
-          handleError(`Could not find current location for team ${selectedTeam}`, interaction);
+          logger(`Could not find current location for team ${selectedTeam}`);
           return;  // Return immediately if team data is invalid
         }
 
@@ -130,7 +130,7 @@ module.exports = {
           ephemeral: true,
         });
       } catch (error) {
-        handleError(`Error completing task for team ${selectedTeam}:`, interaction);
+        logger(`Error completing task for team ${selectedTeam}:`, error, interaction);
         if (!interaction.replied) {
           await interaction.editReply({
             content: 'Failed to complete the task. Please try again later.',
@@ -140,5 +140,4 @@ module.exports = {
       }
     }
   }
-
 };

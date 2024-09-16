@@ -1,29 +1,25 @@
 // penaltiesManager.js
 
 const { movementPenalty, extraChallengePenalty, teleportPenalty } = require('./movementLogic');
+const { logger } = require('./logger');
 
-const penaltyOptions = [
-  'movementPenalty',
-  'extraChallengePenalty',
-  'teleportPenalty',
-];
+// Map the penalty options to their corresponding functions
+const penaltyActions = {
+  movementPenalty,
+  extraChallengePenalty,
+  teleportPenalty,
+};
 
 // Apply a random penalty to the team
 async function applyRandomPenalty(teamName) {
-  const penalty = penaltyOptions[Math.floor(Math.random() * penaltyOptions.length)];
-
-  switch (penalty) {
-    case 'movementPenalty':
-      await movementPenalty(teamName);
-      break;
-    case 'extraChallengePenalty':
-      await extraChallengePenalty(teamName);
-      break;
-    case 'teleportPenalty':
-      await teleportPenalty(teamName);
-      break;
-    default:
-      console.log('No valid penalty applied.');
+  const penaltyKeys = Object.keys(penaltyActions);
+  const randomPenalty = penaltyKeys[Math.floor(Math.random() * penaltyKeys.length)];
+  
+  try {
+    await penaltyActions[randomPenalty](teamName);
+    logger(`Applied ${randomPenalty} to team ${teamName}.`);
+  } catch (error) {
+    logger(`Error applying penalty: ${randomPenalty} to team ${teamName}.`, error);
   }
 }
 

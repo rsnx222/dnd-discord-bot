@@ -4,9 +4,9 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const databaseHelper = require('../helpers/databaseHelper');
 const { handleEventCompletion } = require('../helpers/eventManager');
 const { generateMapImage } = require('../helpers/mapGenerator');
-const getTeams = require('../helpers/getTeams');
+const { getTeams } = require('../helpers/getTeams');
 const { checkRole } = require('../helpers/checkRole'); 
-const { handleError } = require('../helpers/handleError');
+const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,7 +16,7 @@ module.exports = {
       option.setName('team')
         .setDescription('Team to reset')
         .setRequired(true)
-        .addChoices(...getTeams.getTeams())
+        .addChoices(...getTeams())
     ), 
 
   async execute(interaction) {
@@ -37,7 +37,7 @@ module.exports = {
       const enteredTeamName = interaction.fields.getTextInputValue('confirm_team_name');
 
       if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
-        console.log(`Team name matches. Resetting team ${selectedTeam}.`);
+        logger(`Team name matches. Resetting team ${selectedTeam}.`);
 
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
@@ -73,7 +73,7 @@ module.exports = {
 
         await interaction.editReply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
       } else {
-        console.log('Team name mismatch.');
+        logger('Team name mismatch.');
         await interaction.editReply({ content: 'Confirmation failed. The entered team name did not match.', ephemeral: true });
       }
     }

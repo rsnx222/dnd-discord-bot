@@ -1,10 +1,8 @@
-const { handleError } = require('../helpers/handleError');
-
 // databaseHelper.js
 
 const mysql = require('mysql2/promise');
-const settings = require('../config/settings');
 const tiles = require('../config/tiles');
+const { logger } = require('../helpers/logger');
 
 // Setup MySQL connection using environment variables
 async function getDBConnection() {
@@ -29,7 +27,7 @@ async function getTeamData() {
       channelId: row.channel_id  // Ensure your table has this field
     }));
   } catch (error) {
-    handleError('Error fetching team data from database:', error);
+    logger('Error fetching team data from database:', error);
     throw error;
   }
 }
@@ -46,7 +44,7 @@ async function getTeamChannelId(teamName) {
 
     return rows[0].channel_id;
   } catch (error) {
-    handleError('Error fetching team channel ID from database:', error);
+    logger('Error fetching team channel ID from database:', error);
     throw error;
   }
 }
@@ -60,7 +58,7 @@ async function updateTeamLocation(teamName, newLocation) {
       [newLocation, teamName]
     );
   } catch (error) {
-    handleError('Error updating team location in the database:', error);
+    logger('Error updating team location in the database:', error);
     throw error;
   }
 }
@@ -75,17 +73,17 @@ async function updateExploredTiles(teamName, newTiles) {
       [newTilesString, teamName]
     );
   } catch (error) {
-    handleError('Error updating explored tiles in the database:', error);
+    logger('Error updating explored tiles in the database:', error);
     throw error;
   }
 }
 
 // Function to fetch tile data from tiles.js
 function getTileData(tileName) {
-  console.log(`Fetching data for tile: ${tileName}`);  // Log the tile being fetched
+  logger(`Fetching data for tile: ${tileName}`);  // Log the tile being fetched
   const tileData = tiles[tileName];  // Access the tile directly
   if (!tileData) {
-    handleError(`No data found for tile ${tileName}`);
+    logger(`No data found for tile ${tileName}`);
     return null;  // Return null if tile does not exist
   }
   return tileData;
@@ -96,11 +94,11 @@ async function updateTeamStatus(teamName, status) {
   try {
     const connection = await getDBConnection();
     await connection.execute(
-      'UPDATE teams SET status = ? WHERE team_name = ?',
-      [status, teamName]
+      'UPDATE teams SET status = CONCAT(status, ?, ?) WHERE team_name = ?',
+      [',', status, teamName]
     );
   } catch (error) {
-    handleError('Error updating team status in the database:', error);
+    logger('Error updating team status in the database:', error);
     throw error;
   }
 }
