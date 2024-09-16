@@ -55,7 +55,7 @@ function setRandomActivity() {
 
 // On client ready
 client.once(Events.ClientReady, async () => {
-  logger.log('Bot is online!');
+  logger('Bot is online!');
 
   // Set activity randomly every 30 mins
   setRandomActivity();
@@ -66,9 +66,9 @@ client.once(Events.ClientReady, async () => {
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
     await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-    logger.log('Commands registered successfully.');
+    logger('Commands registered successfully.');
   } catch (error) {
-    logger.error('Error during command registration:', error);
+    logger('Error during command registration:', error);
   }
 });
 
@@ -76,14 +76,14 @@ client.once(Events.ClientReady, async () => {
 async function handleCommandInteraction(interaction) {
   const command = client.commands.get(interaction.commandName);
   if (!command) {
-    logger.error(`No command found for: ${interaction.commandName}`);
+    logger(`No command found for: ${interaction.commandName}`);
     return;
   }
   
   try {
     await command.execute(interaction);
   } catch (error) {
-    logger.error(`Error executing command ${interaction.commandName}:`, error);
+    logger(`Error executing command ${interaction.commandName}:`, error);
     await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
   }
 }
@@ -95,7 +95,7 @@ async function handleSelectMenuInteraction(interaction) {
     try {
       await command.handleSelectMenu(interaction);
     } catch (error) {
-      logger.error('Error handling select menu interaction:', error);
+      logger('Error handling select menu interaction:', error);
       await interaction.reply({ content: 'Failed to handle team selection.', ephemeral: true });
     }
   }
@@ -108,7 +108,7 @@ async function handleButtonInteraction(interaction) {
     try {
       await command.handleButton(interaction);
     } catch (error) {
-      logger.error('Error handling button interaction:', error);
+      logger('Error handling button interaction:', error);
       await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
     }
   }
@@ -124,7 +124,7 @@ async function handleModalInteraction(interaction) {
       try {
         await command.handleModal(interaction);
       } catch (error) {
-        logger.error('Error handling reset modal interaction:', error);
+        logger('Error handling reset modal interaction:', error);
         await interaction.reply({ content: 'Failed to handle the reset modal.', ephemeral: true });
       }
     }
@@ -134,7 +134,7 @@ async function handleModalInteraction(interaction) {
       try {
         await command.handleModal(interaction);
       } catch (error) {
-        logger.error('Error handling moveteamcoord modal interaction:', error);
+        logger('Error handling moveteamcoord modal interaction:', error);
         await interaction.reply({ content: 'Failed to handle the moveteamcoord modal.', ephemeral: true });
       }
     }
@@ -154,12 +154,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await handleModalInteraction(interaction);
     }
   } catch (error) {
-    logger.error('Error in interaction handling:', error);
+    logger('Error in interaction handling:', error);
     await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
   }
 });
 
 // Login the bot
 client.login(settings.DISCORD_TOKEN).catch((error) => {
-  logger.error('Failed to login the bot:', error);
+  logger('Failed to login the bot:', error);
 });

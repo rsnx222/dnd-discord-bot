@@ -43,7 +43,7 @@ module.exports = {
       });
       
     } catch (error) {
-      logger.error('Error generating explored tiles grid:', error);
+      logger('Error generating explored tiles grid:', error);
       await interaction.editReply({
         content: 'Failed to load explored tiles. Please try again later.',
         ephemeral: true

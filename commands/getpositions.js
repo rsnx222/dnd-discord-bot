@@ -19,7 +19,7 @@ module.exports = {
 
       // Handle case if no data is returned
       if (!teamData || teamData.length === 0) {
-        logger.error('No team data returned from the database.');
+        logger('No team data returned from the database.');
         return interaction.editReply({ content: 'No team data available.', ephemeral: true });
       }
 
@@ -31,7 +31,7 @@ module.exports = {
 
         // Handle missing or undefined values for teamName and currentLocation
         if (!teamName || !currentLocation) {
-          logger.error('Team name or location is undefined', { teamName, currentLocation });
+          logger('Team name or location is undefined', { teamName, currentLocation });
           locations += 'Error: team name or location is missing.\n';
         } else {
           // Use an emoji if available, otherwise fall back to the default '🔘'
@@ -44,7 +44,7 @@ module.exports = {
       await interaction.editReply({ content: locations, ephemeral: true });
 
     } catch (error) {
-      logger.error('Error fetching team data from the database:', error);
+      logger('Error fetching team data from the database:', error);
       await interaction.editReply({ content: 'Failed to fetch team positions from the database.', ephemeral: true });
     }
   },
