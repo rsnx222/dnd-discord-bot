@@ -1,7 +1,6 @@
-
 // taskHandler.js
 
-const { handleError } = require('../helpers/errorHandler');
+const { handleError } = require('../helpers/handleError');
 const { handleEventCompletion } = require('./eventManager');
 
 // Function to handle task completion for various event types

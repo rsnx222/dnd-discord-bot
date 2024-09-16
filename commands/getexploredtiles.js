@@ -1,9 +1,9 @@
 // getexploredtiles.js
 
-const { SlashCommandBuilder, ActionRowBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const teamManager = require('../helpers/teamManager');
-const { checkUserPermissions } = require('../helpers/roleChecks');
+const getTeams = require('../helpers/getTeams');
+const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,12 +13,12 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())
+        .addChoices(...getTeams.getTeams())
     ),
 
   async execute(interaction) {
     // Check if the user is an helper
-    if (!checkUserPermissions(interaction.member, 'helper')) {
+    if (!checkRole(interaction.member, 'helper')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 

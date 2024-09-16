@@ -2,8 +2,8 @@
 
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../helpers/mapGenerator');
-const { checkUserPermissions } = require('../helpers/roleChecks');  // Import the helper check
-const { handleError } = require('../helpers/errorHandler');
+const { checkRole } = require('../helpers/checkRole');  // Import the helper check
+const { handleError } = require('../helpers/handleError');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,7 +12,7 @@ module.exports = {
 
   async execute(interaction) {
     // Check if the user is an helper
-    if (!checkUserPermissions(interaction.member, 'admin')) {
+    if (!checkRole(interaction.member, 'admin')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 

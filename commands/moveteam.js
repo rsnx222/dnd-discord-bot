@@ -3,10 +3,11 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const { calculateNewTile } = require('../helpers/movementLogic');
-const teamManager = require('../helpers/teamManager');
-const { sendMapAndEvent, handleCompleteTask } = require('../helpers/teamMovementHelper');
-const { handleError } = require('../helpers/errorHandler');
-const { checkUserPermissions } = require('../helpers/roleChecks');
+const getTeams = require('../helpers/getTeams');
+const { sendMapAndEvent } = require('../helpers/sendMapAndEvent');
+const { handleCompleteTask } = require('../helpers/taskHandler');
+const { handleError } = require('../helpers/handleError');
+const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,11 +17,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team to move')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())
+        .addChoices(...getTeams.getTeams())
     ),
 
   async execute(interaction) {
-    if (!checkUserPermissions(interaction.member, 'admin')) {
+    if (!checkRole(interaction.member, 'admin')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
@@ -106,7 +107,7 @@ module.exports = {
     } else if (action === 'complete') {
       // Task completion logic
       try {
-        if (!checkUserPermissions(interaction.member, 'helper')) {
+        if (!checkRole(interaction.member, 'helper')) {
           return interaction.reply({ content: 'You do not have permission to complete this task.', ephemeral: true });
         }
 

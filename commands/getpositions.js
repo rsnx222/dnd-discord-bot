@@ -3,7 +3,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
 const settings = require('../config/settings');
-const { handleError } = require('../helpers/errorHandler');
+const { handleError } = require('../helpers/handleError');
 
 module.exports = {
   data: new SlashCommandBuilder()

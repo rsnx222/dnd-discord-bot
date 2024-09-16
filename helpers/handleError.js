@@ -1,4 +1,4 @@
-// errorHandler.js
+// handleError.js
 
 const logger = require('./logger');
 

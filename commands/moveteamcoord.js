@@ -1,12 +1,11 @@
-const { handleError } = require('../helpers/errorHandler');
-
 // moveteamcoord.js
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { checkUserPermissions } = require('../helpers/roleChecks');
-const { sendMapAndEvent } = require('../helpers/teamMovementHelper');
-const teamManager = require('../helpers/teamManager');
+const { checkRole } = require('../helpers/checkRole');
+const { sendMapAndEvent } = require('../helpers/sendMapAndEvent');
+const getTeams = require('../helpers/getTeams');
+const { handleError } = require('../helpers/handleError');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,11 +15,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Select a team to move')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())
+        .addChoices(...getTeams.getTeams())
     ),
 
   async execute(interaction) {
-    if (!checkUserPermissions(interaction.member, 'admin')) {
+    if (!checkRole(interaction.member, 'admin')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
@@ -55,7 +54,7 @@ module.exports = {
       const team = teamData.find(t => t.teamName === selectedTeam);
 
       if (!team) {
-        throw new Error(`Could not find data for team ${selectedTeam}`);
+        handleError(`Could not find data for team ${selectedTeam}`);
       }
 
       // Update team's location and explored tiles

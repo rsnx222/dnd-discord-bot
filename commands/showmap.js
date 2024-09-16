@@ -1,12 +1,12 @@
-const { handleError } = require('../helpers/errorHandler');
+const { handleError } = require('../helpers/handleError');
 
 // showmap.js
 
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const databaseHelper = require('../helpers/databaseHelper');
-const teamManager = require('../helpers/teamManager');
-const { checkUserPermissions } = require('../helpers/roleChecks');
+const getTeams = require('../helpers/getTeams');
+const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,11 +16,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Optional: Select a team to view only their explored/unexplored tiles')
         .setRequired(false)
-        .addChoices(...teamManager.getTeamOptions())),  // Dynamically generate team options from teamManager
+        .addChoices(...getTeams.getTeams())),  // Dynamically generate team options from getTeams
 
   async execute(interaction) {
     // Check if the user is an helper
-    if (!checkUserPermissions(interaction.member, 'helper')) {
+    if (!checkRole(interaction.member, 'helper')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 

@@ -4,9 +4,9 @@ const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Act
 const databaseHelper = require('../helpers/databaseHelper');
 const { handleEventCompletion } = require('../helpers/eventManager');
 const { generateMapImage } = require('../helpers/mapGenerator');
-const teamManager = require('../helpers/teamManager');
-const { checkUserPermissions } = require('../helpers/roleChecks'); 
-const { handleError } = require('../helpers/errorHandler');
+const getTeams = require('../helpers/getTeams');
+const { checkRole } = require('../helpers/checkRole'); 
+const { handleError } = require('../helpers/handleError');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,11 +16,11 @@ module.exports = {
       option.setName('team')
         .setDescription('Team to reset')
         .setRequired(true)
-        .addChoices(...teamManager.getTeamOptions())
+        .addChoices(...getTeams.getTeams())
     ), 
 
   async execute(interaction) {
-    if (!checkUserPermissions(interaction.user, 'owner')) {
+    if (!checkRole(interaction.user, 'owner')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 

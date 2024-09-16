@@ -1,4 +1,4 @@
-const { handleError } = require('../helpers/errorHandler');
+const { handleError } = require('../helpers/handleError');
 
 // databaseHelper.js
 

@@ -1,9 +1,9 @@
-// roleChecks.js
+// checkRole.js
 
 const ownerId = '839236111054143508'; // Nick's Discord ID
 
 // Centralized role checks for various permissions
-function checkUserPermissions(user, role) {
+function checkRole(user, role) {
     switch(role) {
         case 'owner':
             return isOwner(user);
@@ -35,5 +35,5 @@ module.exports = {
   isOwner,
   isAdmin,
   isHelper,
-  checkUserPermissions,
+  checkRole,
 };
