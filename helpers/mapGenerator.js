@@ -3,7 +3,7 @@
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const settings = require('../config/settings');
-const { handleError } = require('./handleError');
+const { logger } = require('./logger');
 
 async function generateMapImage(teamData, showAllTeams = true) {
   const tileWidth = 192; // Half of 384px
@@ -22,7 +22,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
   try {
     defaultIcon = await loadImage(`${settings.teamIconBaseURL}Black.png`);
   } catch (error) {
-    handleError('Error loading default icon.', null, error);
+    logger('Error loading default icon.', null, error);
   }
 
   // Loop through the valid map grid (5 columns, 10 rows)
@@ -50,7 +50,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
           ctx.fillRect((col - 1) * tileWidth, (row - 1) * tileHeight, tileWidth, tileHeight);
         }
       } catch (error) {
-        handleError(`Error loading tile image from URL: ${tileImageURL}`, null, error);
+        logger(`Error loading tile image from URL: ${tileImageURL}`, null, error);
       }
     }
   }
@@ -87,7 +87,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
         const iconImage = await loadImage(teamIconURL);
         ctx.drawImage(iconImage, iconX, iconY, 32, 32);
       } catch (error) {
-        handleError(`Error loading team icon: ${teamIconURL}, using default icon instead.`, null, error);
+        logger(`Error loading team icon: ${teamIconURL}, using default icon instead.`, null, error);
         if (defaultIcon) {
           ctx.drawImage(defaultIcon, iconX, iconY, 32, 32);
         }
@@ -105,7 +105,7 @@ async function generateMapImage(teamData, showAllTeams = true) {
 
 function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
   if (!tile) {
-    handleError('Tile is null or undefined.');
+    logger('Tile is null or undefined.');
     return [0, 0];
   }
 
@@ -122,7 +122,7 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
     return [x, y];
   }
 
-  handleError(`Invalid tile format: ${tile}`);
+  logger(`Invalid tile format: ${tile}`);
   return [0, 0];
 }
 
