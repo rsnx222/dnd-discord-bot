@@ -4,6 +4,7 @@ const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
 const { generateEventMessage, handleEventAction } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');  // Import Button Components
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -27,20 +28,28 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
     });
 
     // Handle the event at the new tile
-    if (!isEventComplete) {
-      logger(`Tile data for event message: ${JSON.stringify({ tileName: newTile })}`);
+    const tileData = await databaseHelper.getTileData(newTile);
+    const eventTypes = tileData.event_type || [];
+
+    if (eventTypes.length === 0) {
+      // No events on this tile, generate directional buttons
+      const directionButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_south_${teamName}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_west_${teamName}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+      );
+
+      await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
+    } else {
+      // Generate event-specific buttons
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
 
-      // Get the actual event types from tile data
-      const tileData = await databaseHelper.getTileData(newTile);
-      const eventTypes = tileData.event_type || [];
-
-      // Generate event-specific buttons
       const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
       await channel.send({ components: [eventButtons] });
 
-      // Action handling (completion or failure of the event)
+      // Handle event actions (if applicable)
       const actionResult = await handleEventAction('complete', { tileName: newTile }, eventIndex, teamData);
       await channel.send(actionResult);
     }

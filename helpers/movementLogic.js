@@ -1,6 +1,7 @@
 // movementLogic.js
 
 const databaseHelper = require('./databaseHelper');
+const { sendMapAndEvent } = require('./sendMapAndEvent');
 const { logger } = require('./logger');
 
 // Function to calculate the new tile after moving in a direction
@@ -47,9 +48,6 @@ function calculateNewTile(currentTile, direction) {
   const MIN_ROW = 1;
   const MAX_ROW = 10;
 
-  // Log the move
-  logger(`Attempting to move from ${col}${row} to column index ${newColIndex}, row ${newRow}`);
-
   // Ensure the new position is within bounds
   if (newColIndex < MIN_COL_INDEX || newColIndex > MAX_COL_INDEX || newRow < MIN_ROW || newRow > MAX_ROW) {
     logger('New position is out of bounds');
@@ -61,36 +59,57 @@ function calculateNewTile(currentTile, direction) {
   return `${newColLetter}${newRow}`;
 }
 
-// Penalty: restrict movement for a duration (e.g., 24 hours)
-async function movementPenalty(teamName) {
-  await databaseHelper.updateTeamStatus(teamName, 'Movement restricted');
-  logger(`Movement restricted for team ${teamName}.`);
-}
+// Handle movement when a directional button is clicked
+async function handleDirectionMove(interaction, teamName, direction) {
+  try {
+    await interaction.deferReply({ ephemeral: true });
 
-// Penalty: add an extra challenge to the next tile
-async function extraChallengePenalty(teamName) {
-  await databaseHelper.updateTeamStatus(teamName, 'Extra challenge');
-  logger(`An extra challenge has been added for team ${teamName}.`);
-}
+    // Fetch team data and check current location
+    const teamData = await databaseHelper.getTeamData();
+    const team = teamData.find(t => t.teamName === teamName);
 
-// Penalty: teleport the team to a random tile
-async function teleportPenalty(teamName) {
-  const randomTile = getRandomTile();
-  await databaseHelper.updateTeamLocation(teamName, randomTile);
-  logger(`Team ${teamName} has been teleported to ${randomTile}.`);
-}
+    if (!team || !team.currentLocation) {
+      logger(`Could not find current location for team ${teamName}`);
+      return interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+    }
 
-// Function to get a random valid tile
-function getRandomTile() {
-  const colIndex = Math.floor(Math.random() * 6); // A-F (6 options)
-  const rowIndex = Math.floor(Math.random() * 10) + 1; // 1-10
-  const col = String.fromCharCode('A'.charCodeAt(0) + colIndex);
-  return `${col}${rowIndex}`;
+    const currentLocation = team.currentLocation;
+    const newTile = calculateNewTile(currentLocation, direction);
+
+    if (!newTile) {
+      return interaction.editReply({ content: 'Invalid move. The team cannot move in that direction.' });
+    }
+
+    // Update team's location and explored tiles
+    await databaseHelper.updateTeamLocation(teamName, newTile);
+    const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
+    await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
+
+    // Create updated team data with the new currentLocation
+    const updatedTeamData = {
+      teamName: teamName,
+      currentLocation: newTile,
+      exploredTiles: updatedExploredTiles,
+    };
+
+    // Fetch the channel and send the map and event for the new tile
+    const channelId = await databaseHelper.getTeamChannelId(teamName);
+    const channel = await interaction.client.channels.fetch(channelId);
+    if (channel) {
+      await sendMapAndEvent(teamName, newTile, interaction, channel, 0, false, updatedTeamData);
+    }
+
+    await interaction.editReply({
+      content: `Team ${teamName} moved to ${newTile}.`,
+    });
+
+  } catch (error) {
+    logger(`Error moving team ${teamName}:`, error);
+    await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+  }
 }
 
 module.exports = {
   calculateNewTile,
-  movementPenalty,
-  extraChallengePenalty,
-  teleportPenalty,
+  handleDirectionMove,  // Export the new function
 };

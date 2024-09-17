@@ -7,6 +7,7 @@ const settings = require('./config/settings');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+const { handleDirectionMove } = require('./helpers/movementLogic');
 
 // Initialize Discord client
 const client = new Client({
@@ -113,16 +114,38 @@ async function handleSelectMenuInteraction(interaction) {
 
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
-  const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
-  if (command && typeof command.handleButton === 'function') {
-    try {
-      await command.handleButton(interaction);
-    } catch (error) {
-      logger('Error handling button interaction:', error);
-      await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
+  try {
+    // Check if the interaction has a custom ID that indicates a team action
+    const customIdParts = interaction.customId.split('_');
+    const action = customIdParts[1];  // Extract the action (e.g., 'north', 'complete')
+
+    // Check for commands that handle button interactions
+    const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
+
+    if (command && typeof command.handleButton === 'function') {
+      // Determine if the action is a movement action
+      if (['north', 'south', 'west', 'east'].includes(action)) {
+        const teamName = customIdParts.pop(); // Extract team name from the custom ID
+
+        // Handle directional movement
+        await handleDirectionMove(interaction, teamName, action);  // Call the movement handler
+      } else if (action === 'complete') {
+        // Handle task completion logic
+        await command.handleButton(interaction); // Call task completion logic if applicable
+      } else {
+        // Handle other button actions if needed
+        await command.handleButton(interaction); // Fallback to existing command handling
+      }
+    } else {
+      logger(`No command found for button interaction: ${interaction.customId}`);
+      await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
     }
+  } catch (error) {
+    logger('Error handling button interaction:', error);
+    await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
   }
 }
+
 
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
