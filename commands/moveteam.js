@@ -84,13 +84,18 @@ module.exports = {
         const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
         await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
+        // Create updated team data with the new currentLocation
+        const updatedTeamData = {
+          teamName: selectedTeam,
+          currentLocation: newTile,  // Ensure currentLocation is passed
+          exploredTiles: updatedExploredTiles,
+        };
+
         // Get team channel and send map and event
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
         const channel = await interaction.client.channels.fetch(channelId);
         if (channel) {
-          // Start with the first event
-          logger(`Sending map and event for team ${selectedTeam} at ${newTile}`);
-          await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
+          await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false, updatedTeamData); // Pass updatedTeamData
         }
 
         await interaction.editReply({

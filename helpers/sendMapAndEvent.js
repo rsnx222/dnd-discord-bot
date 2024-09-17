@@ -4,7 +4,7 @@ const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
 const { generateEventMessage } = require('./eventManager'); // Assuming events are handled here
 
-async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false) {
+async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
     // Validate the format of newTile before proceeding
     if (!newTile || typeof newTile !== 'string' || newTile.length < 2) {
@@ -13,10 +13,11 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       return;
     }
 
-    logger(`sendMapAndEvent called with team ${teamName}, tile ${newTile}`);
+    logger(`sendMapAndEvent called for team ${teamName}, tile ${newTile}`);
 
     // Fetch team data and generate the map
-    const mapImagePath = await generateMapImage([{ teamName, exploredTiles: [newTile] }], false);
+    // Now using the full teamData, which includes currentLocation and exploredTiles
+    const mapImagePath = await generateMapImage([teamData], false);
     logger(`Map generated for team ${teamName} at tile ${newTile}, image path: ${mapImagePath}`);
     
     // Send the map image to the team's channel
