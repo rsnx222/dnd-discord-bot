@@ -115,7 +115,8 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
 
     const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0);
 
-    const x = (col - 1) * tileWidth + tileWidth / 2;
+    // Calculate the x and y position of the tile
+    const x = col * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
 
     return [x, y];
