@@ -1,6 +1,6 @@
 // eventManager.js
 
-const { rollForReward } = require('./rewardsManager');
+const { rollForReward } = require('./rewardsPenaltiesHandler');
 const { logger } = require('./logger');
 const { applyRandomPenalty } = require('./penaltiesManager');
 
