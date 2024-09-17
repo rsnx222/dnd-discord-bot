@@ -6,6 +6,8 @@ const settings = require('../config/settings');
 const { logger } = require('./logger');
 
 async function generateMapImage(teamData, showAllTeams = true) {
+  logger(`Team data passed to generateMapImage: ${JSON.stringify(teamData)}, ${showALlTeams}`);
+
   const tileWidth = 192; // Half of 384px
   const tileHeight = 47.5; // Half of 95px
 
@@ -108,17 +110,17 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
     return [0, 0];
   }
 
+  logger(`Calculating coordinates for tile: ${tile}`);
   const gridFormatMatch = tile.match(/([A-Z])(\d+)/);
   if (gridFormatMatch) {
     const colLetter = gridFormatMatch[1];
     const row = parseInt(gridFormatMatch[2], 10);
-
+    
     const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0);
-
-    // Calculate the x and y position of the tile
     const x = col * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
 
+    logger(`Coordinates for tile ${tile}: [${x}, ${y}]`);
     return [x, y];
   }
 

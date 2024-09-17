@@ -1,7 +1,6 @@
-const { logger } = require('../helpers/logger');
-
 // showmap.js
 
+const { logger } = require('../helpers/logger');
 const { SlashCommandBuilder } = require('discord.js');
 const { generateMapImage } = require('../helpers/mapGenerator');
 const databaseHelper = require('../helpers/databaseHelper');

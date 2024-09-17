@@ -13,8 +13,8 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       return;
     }
 
-    logger(`sendMapAndEvent: team ${teamName} moving to tile ${newTile}`);
-    
+    logger(`sendMapAndEvent called with team ${teamName}, tile ${newTile}`);
+
     // Fetch team data and generate the map
     const mapImagePath = await generateMapImage([{ teamName, exploredTiles: [newTile] }], false);
     logger(`Map generated for team ${teamName} at tile ${newTile}, image path: ${mapImagePath}`);

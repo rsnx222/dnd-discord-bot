@@ -89,6 +89,7 @@ module.exports = {
         const channel = await interaction.client.channels.fetch(channelId);
         if (channel) {
           // Start with the first event
+          logger(`Sending map and event for team ${selectedTeam} at ${newTile}`);
           await sendMapAndEvent(selectedTeam, newTile, interaction, channel, 0, false); // Start event at index 0
         }
 
