@@ -22,14 +22,14 @@ function generateEventButtons(eventTypes, teamName, isEventCompleted = false) {
         switch (eventType.toLowerCase()) {
             case 'boss':
                 eventButtons.addComponents(
-                    new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('Mark Boss as Complete').setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId(`forfeit_boss_${teamName}`).setLabel('Forfeit Boss').setStyle(ButtonStyle.Danger)
+                    new ButtonBuilder().setCustomId(`forfeit_boss_${teamName}`).setLabel('Forfeit Boss').setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder().setCustomId(`complete_boss_${teamName}`).setLabel('(Event admin) Mark task as complete').setStyle(ButtonStyle.Success)
                 );
                 break;
             case 'challenge':
                 eventButtons.addComponents(
-                    new ButtonBuilder().setCustomId(`complete_challenge_${teamName}`).setLabel('Complete Challenge').setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId(`forfeit_challenge_${teamName}`).setLabel('Forfeit Challenge').setStyle(ButtonStyle.Danger)
+                    new ButtonBuilder().setCustomId(`forfeit_challenge_${teamName}`).setLabel('Forfeit Challenge').setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder().setCustomId(`complete_challenge_${teamName}`).setLabel('(Event admin) Mark task as complete').setStyle(ButtonStyle.Success)
                 );
                 break;
             case 'puzzle':

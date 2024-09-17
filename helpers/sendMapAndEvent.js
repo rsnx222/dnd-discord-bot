@@ -68,7 +68,7 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
     } else {
       // Handle events normally
       const eventMessage = generateEventMessage(tileData, eventIndex);
-      await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
+      await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n\n**${eventMessage}**\n> ${tileData.task}`);
 
       // Generate event buttons for the team to interact with
       const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
