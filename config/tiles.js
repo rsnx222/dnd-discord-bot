@@ -8,6 +8,13 @@ module.exports = {
     rewards: ['Buff to next challenge', 'Bonus clue for next puzzle'],
     penalties: ['Movement restriction for 24 hours', 'Teleport to a random tile', 'Extra challenge on next tile'],
   },
+  A5: {
+    event_type: 'reset',
+    description: 'Your team has been reset to the starting position.',
+    task: 'Move from this tile to continue your journey.',
+    rewards: [],
+    penalties: [],
+  },
   A6: {
     event_type: 'challenge',
     description: 'Complete 5 easy clue scrolls within 24 hours.',

@@ -5,7 +5,7 @@ const { logger } = require('./logger');
 const { generateEventMessage, handleEventAction } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const databaseHelper = require('./databaseHelper');
+const databaseHelper = require('./databaseHelper'); // Import databaseHelper
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -30,9 +30,28 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
     // Fetch tile data for event handling
     const tileData = await databaseHelper.getTileData(newTile);
-    const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [];
+    const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
 
-    if (eventTypes.length === 0) {
+    if (eventTypes.includes('reset')) {
+      // Handle reset-specific message
+      const resetMessage = `
+        Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?!
+        You find a crumpled note on the ground - you can barely make out the sentence:
+        "*I can't believe we're finally here! Gone on ahead of you to the East - I'll meet you at the lair!* - **L**"
+        (P.S. The first tile to the east holds a challenge...)
+      `;
+      await channel.send(resetMessage);
+
+      // Generate directional buttons for reset
+      const directionButtons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_south_${teamName}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_west_${teamName}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+      );
+
+      await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
+    } else if (eventTypes.length === 0) {
       // No events on this tile, generate directional buttons
       const directionButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
@@ -41,10 +60,9 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
         new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
       );
 
-      logger(`No events found for tile ${newTile}. Sending directional buttons.`);
       await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
     } else {
-      // There are events on this tile, generate event buttons
+      // Handle events normally
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
 

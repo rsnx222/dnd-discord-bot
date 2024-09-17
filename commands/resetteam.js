@@ -2,8 +2,7 @@
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
-const { handleEventCompletion } = require('../helpers/eventManager');
-const { generateMapImage } = require('../helpers/mapGenerator');
+const { sendMapAndEvent } = require('../helpers/sendMapAndEvent');  // Import sendMapAndEvent
 const { getTeams } = require('../helpers/getTeams');
 const { checkRole } = require('../helpers/checkRole'); 
 const { logger } = require('../helpers/logger');
@@ -39,36 +38,22 @@ module.exports = {
       if (enteredTeamName.toLowerCase() === selectedTeam.toLowerCase()) {
         logger(`Team name matches. Resetting team ${selectedTeam}.`);
 
+        // Reset the team location and explored tiles
         await databaseHelper.updateTeamLocation(selectedTeam, 'A5');
         await databaseHelper.updateExploredTiles(selectedTeam, ['A5']);
 
-        const teamData = await databaseHelper.getTeamData();
-        const filteredTeamData = teamData.filter(t => t.teamName === selectedTeam);
-        const mapImagePath = await generateMapImage(filteredTeamData, false);
+        const teamData = {
+          teamName: selectedTeam,
+          currentLocation: 'A5',
+          exploredTiles: ['A5'],
+        };
 
+        // Fetch team channel and send map and event
         const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
+        const channel = await interaction.client.channels.fetch(channelId);
 
-        if (channelId) {
-          const channel = await interaction.client.channels.fetch(channelId);
-
-          if (channel) {
-            const welcomeMessage = `
-              Your team wakes up and finds themselves in a strange land... Some things look similar to Gielinor... is this an alternate reality?! 
-              You find a crumpled note on the ground - you can barely make out the sentence:
-              
-              "*I can't believe we're finally here! Gone on ahead of you to the East - I'll meet you at the lair!* - **L**"
-
-              (P.S. The first tile to the east holds a challenge...)
-            `;
-            await channel.send(welcomeMessage);
-            await channel.send({ files: [mapImagePath] });
-          }
-        }
-
-        const tileData = await databaseHelper.getTileData('A5');
-        if (tileData && tileData.event_type) {
-          const completionMessage = await handleEventCompletion(tileData, teamData.find(t => t.teamName === selectedTeam));
-          await interaction.followUp({ content: completionMessage, ephemeral: true });
+        if (channel) {
+          await sendMapAndEvent(selectedTeam, 'A5', interaction, channel, 0, false, teamData);
         }
 
         await interaction.editReply({ content: `${selectedTeam} has been reset to A5 with only A5 as explored.`, ephemeral: true });
