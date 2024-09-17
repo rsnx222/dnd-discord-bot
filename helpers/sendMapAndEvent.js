@@ -2,7 +2,8 @@
 
 const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
-const { generateEventMessage } = require('./eventManager'); // Assuming events are handled here
+const { generateEventMessage, handleEventAction } = require('./eventManager');
+const { generateEventButtons } = require('./eventButtonHelper');
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -16,7 +17,6 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
     logger(`sendMapAndEvent called for team ${teamName}, tile ${newTile}`);
 
     // Fetch team data and generate the map
-    // Now using the full teamData, which includes currentLocation and exploredTiles
     const mapImagePath = await generateMapImage([teamData], false);
     logger(`Map generated for team ${teamName} at tile ${newTile}, image path: ${mapImagePath}`);
     
@@ -31,6 +31,18 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       logger(`Tile data for event message: ${JSON.stringify({ tileName: newTile })}`);
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
+
+      // Get the actual event types from tile data
+      const tileData = await databaseHelper.getTileData(newTile);
+      const eventTypes = tileData.event_type || [];
+
+      // Generate event-specific buttons
+      const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
+      await channel.send({ components: [eventButtons] });
+
+      // Action handling (completion or failure of the event)
+      const actionResult = await handleEventAction('complete', { tileName: newTile }, eventIndex, teamData);
+      await channel.send(actionResult);
     }
 
     // Acknowledge the successful sending of the map and event
