@@ -1,11 +1,9 @@
-// sendMapAndEvent.js
-
 const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
-const { generateEventMessage, handleEventAction } = require('./eventManager');
+const { generateEventMessage } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const tiles = require('../config/tiles');
+const tiles = require('../config/tiles'); // Correct path to import tiles.js
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -72,12 +70,12 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       const eventMessage = generateEventMessage(tileData, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
 
+      // Generate event buttons for the team to interact with
       const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
       await channel.send({ components: [eventButtons] });
 
-      // Handle event actions (if applicable)
-      const actionResult = await handleEventAction('complete', tileData, eventIndex, teamData);
-      await channel.send(actionResult);
+      // REMOVE: Do not automatically complete the event
+      // Action completion logic is handled by button interactions, not here!
     }
 
     // Acknowledge the successful sending of the map and event
