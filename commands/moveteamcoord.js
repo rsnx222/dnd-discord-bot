@@ -55,6 +55,7 @@ module.exports = {
 
       if (!team) {
         logger(`Could not find data for team ${selectedTeam}`);
+        return;
       }
 
       // Update team's location and explored tiles
@@ -62,11 +63,17 @@ module.exports = {
       const updatedExploredTiles = [...new Set([...team.exploredTiles, enteredTile])];
       await databaseHelper.updateExploredTiles(selectedTeam, updatedExploredTiles);
 
+      const updatedTeamData = {
+        teamName: selectedTeam,
+        currentLocation: enteredTile, // Update current location
+        exploredTiles: updatedExploredTiles,
+      };
+
       const channelId = await databaseHelper.getTeamChannelId(selectedTeam);
       const channel = await interaction.client.channels.fetch(channelId);
 
-      // Send map and event starting from the first event
-      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0); // Start with the first event
+      // Send map and event, passing updated team data
+      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0, false, updatedTeamData); // Pass updated team data
     } catch (error) {
       logger(`Error moving team ${selectedTeam}:`, error);
       await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
