@@ -82,10 +82,22 @@ async function updateExploredTiles(teamName, newTiles) {
 function getTileData(tileName) {
   logger(`Fetching data for tile: ${tileName}`);  // Log the tile being fetched
   const tileData = tiles[tileName];  // Access the tile directly
+  
   if (!tileData) {
-    logger(`No data found for tile ${tileName}`);
-    return null;  // Return null if tile does not exist
+    // Handle tiles without events
+    logger(`No data found for tile ${tileName}, defaulting to generic tile.`);
+    return {
+      event_type: null,  // No event type since there's no event on this tile
+      description: 'This is a peaceful area with no challenges or events.',  // Default description for tiles without events
+    };
   }
+
+  // Check for missing event_type within the existing tile data
+  if (!tileData.event_type) {
+    logger(`Warning: event_type is missing for tile ${tileName}`);
+    tileData.event_type = 'default';  // Provide a default event type if none is available
+  }
+
   return tileData;
 }
 

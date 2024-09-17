@@ -113,7 +113,7 @@ function getCoordinatesFromTile(tile, tileWidth, tileHeight) {
     const colLetter = gridFormatMatch[1];
     const row = parseInt(gridFormatMatch[2], 10);
 
-    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+    const col = colLetter.charCodeAt(0) - 'A'.charCodeAt(0);
 
     const x = (col - 1) * tileWidth + tileWidth / 2;
     const y = (row - 1) * tileHeight + tileHeight / 2;
