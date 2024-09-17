@@ -4,7 +4,8 @@ const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
 const { generateEventMessage, handleEventAction } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');  // Import Button Components
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const databaseHelper = require('./databaseHelper');
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -27,9 +28,9 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       content: `Team ${teamName} has moved to tile ${newTile}.`,
     });
 
-    // Handle the event at the new tile
+    // Fetch tile data for event handling
     const tileData = await databaseHelper.getTileData(newTile);
-    const eventTypes = tileData.event_type || [];
+    const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [];
 
     if (eventTypes.length === 0) {
       // No events on this tile, generate directional buttons
@@ -40,9 +41,10 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
         new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
       );
 
+      logger(`No events found for tile ${newTile}. Sending directional buttons.`);
       await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
     } else {
-      // Generate event-specific buttons
+      // There are events on this tile, generate event buttons
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
 
