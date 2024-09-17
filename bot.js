@@ -116,23 +116,27 @@ async function handleSelectMenuInteraction(interaction) {
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
   try {
-    // Extract relevant parts of the customId (e.g., 'forfeit_event_TeamName')
+    // Split the customId into parts (e.g., 'move_north_TeamName')
     const customIdParts = interaction.customId.split('_');
-    const action = customIdParts[0];  // Action: forfeit, complete, etc.
-    const eventType = customIdParts[1] || 'event'; // Extract event type
-    const teamName = customIdParts.pop(); // Extract team name from the custom ID
+    const action = customIdParts[0];  // Action: 'move', 'forfeit', 'complete', etc.
+    const directionOrType = customIdParts[1];  // Could be direction ('north', 'south') or event type ('boss', 'puzzle')
+    const teamName = customIdParts.pop();  // Team name is always at the 
+    
+    logger(`Handling button interaction: ${interaction.customId}`);
+    logger(`Action: ${action}, Direction/Event Type: ${directionOrType}, Team: ${teamName}`);
 
-    if (['north', 'south', 'west', 'east'].includes(action)) {
+    // Check if the action is related to directional movement
+    if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
       // Handle directional movement
-      await handleDirectionMove(interaction, teamName, action);  // Call the movement handler
+      await handleDirectionMove(interaction, teamName, directionOrType);  // Call the movement handler with direction
     } else if (action === 'forfeit') {
       // Handle event forfeiture
-      await handleForfeitEvent(interaction, teamName, eventType);
+      await handleForfeitEvent(interaction, teamName, directionOrType);
     } else if (action === 'complete') {
-      // Handle event completion by event helper
-      await handleCompleteEvent(interaction, teamName, eventType);
+      // Handle event completion
+      await handleCompleteEvent(interaction, teamName, directionOrType);
     } else {
-      // Handle any other button interactions (e.g., transport links, etc.)
+      // Handle any other button interactions (fallback)
       const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
       if (command && typeof command.handleButton === 'function') {
         await command.handleButton(interaction);
@@ -146,6 +150,7 @@ async function handleButtonInteraction(interaction) {
     await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
   }
 }
+
 
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
