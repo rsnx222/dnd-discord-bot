@@ -6,7 +6,7 @@ const settings = require('../config/settings');
 const { logger } = require('./logger');
 
 async function generateMapImage(teamData, showAllTeams = true) {
-  logger(`Team data passed to generateMapImage: ${JSON.stringify(teamData)}, ${showALlTeams}`);
+  logger(`Team data passed to generateMapImage: ${JSON.stringify(teamData)}, ${showAllTeams}`);
 
   const tileWidth = 192; // Half of 384px
   const tileHeight = 47.5; // Half of 95px
