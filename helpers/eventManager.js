@@ -5,9 +5,10 @@ const { applyRandomPenalty } = require('./penaltiesManager');
 
 function generateEventMessage(tileData, eventIndex = 0) {
   if (!tileData || !tileData.event_type) {
+    logger('Tile data is missing or event_type is undefined:', tileData);
     return 'You have arrived at a new tile, but there is no information available about it.';
   }
-
+  
   const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
   const currentEventType = eventTypes[eventIndex] || eventTypes[0];
   let message = '';

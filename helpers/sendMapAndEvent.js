@@ -27,7 +27,8 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
     // Handle the event at the new tile
     if (!isEventComplete) {
-      logger(`Generating event message for tile ${newTile}`);
+      logger(`Tile data for event message: ${JSON.stringify({ tileName: newTile })}`);
+      const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
     }
