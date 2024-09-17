@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { handleDirectionMove } = require('./helpers/movementLogic');
-const { handleForfeitEvent, handleCompleteEvent } = require('./eventActionHandler');
+const { handleForfeitEvent, handleCompleteEvent } = require('./helpers/eventActionHandler');
 
 // Initialize Discord client
 const client = new Client({
