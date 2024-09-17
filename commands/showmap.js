@@ -40,7 +40,7 @@ module.exports = {
         showAllTeams = false;  // Set flag to show only the selected team's explored tiles
       }
 
-      logger(`Team data for map generation: ${JSON.stringify(filteredTeamData)}`);
+      // logger(`Team data for map generation: ${JSON.stringify(filteredTeamData)}`);
 
       // Generate the map image for either all teams (unexplored) or the selected team
       const imagePath = await generateMapImage(filteredTeamData, showAllTeams);
