@@ -1,9 +1,39 @@
 const { generateMapImage } = require('./mapGenerator');
 const { logger } = require('./logger');
-const { generateEventMessage } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const tiles = require('../config/tiles'); // Correct path to import tiles.js
+
+// Function to generate the event message based on tile data
+function generateEventMessage(tileData, eventIndex = 0) {
+  if (!tileData || !tileData.event_type) {
+    logger('Tile data is missing or event_type is undefined:', tileData);
+    return 'You have arrived at a new tile, but there is no information available about it.';
+  }
+  
+  const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
+  const currentEventType = eventTypes[eventIndex] || eventTypes[0];
+  let message = '';
+
+  switch (currentEventType.toLowerCase()) {
+    case 'quest':
+      message = `You have discovered a quest on this tile. ${tileData.description}`;
+      break;
+    case 'challenge':
+      message = `Prepare yourself! This tile contains a challenge: ${tileData.description}`;
+      break;
+    case 'boss':
+      message = `A fearsome boss awaits on this tile. ${tileData.description}`;
+      break;
+    case 'transport link':
+      message = `This tile has a transport link. ${tileData.description}`;
+      break;
+    default:
+      message = `You have encountered something on this tile: ${tileData.description}`;
+  }
+
+  return message;
+}
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -68,14 +98,13 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
     } else {
       // Handle events normally
       const eventMessage = generateEventMessage(tileData, eventIndex);
-      await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n\n**${eventMessage}**\n\n> ${tileData.task}\n`);
+      await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n\n**${eventMessage}**\n\n> ${tileData.task}`);
 
       // Generate event buttons for the team to interact with
       const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
       await channel.send({ components: [eventButtons] });
 
-      // REMOVE: Do not automatically complete the event
-      // Action completion logic is handled by button interactions, not here!
+      // Event completion logic is handled by button interactions, not here
     }
 
     // Acknowledge the successful sending of the map and event
