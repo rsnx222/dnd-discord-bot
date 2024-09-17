@@ -95,8 +95,8 @@ async function generateMapImage(teamData, showAllTeams = true) {
     }
   }
 
-  // Generate a dynamic filename for the map
-  const outputPath = `./maps/map_${Date.now()}.png`;
+  // Use a static filename for the map
+  const outputPath = `./maps/map.png`;
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(outputPath, buffer);
 
