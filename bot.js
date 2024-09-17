@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { handleDirectionMove } = require('./helpers/movementLogic');
+const { handleForfeitEvent, handleCompleteEvent } = require('./eventActionHandler');
 
 // Initialize Discord client
 const client = new Client({
@@ -115,37 +116,36 @@ async function handleSelectMenuInteraction(interaction) {
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
   try {
-    // Check if the interaction has a custom ID that indicates a team action
+    // Extract relevant parts of the customId (e.g., 'forfeit_event_TeamName')
     const customIdParts = interaction.customId.split('_');
-    const action = customIdParts[1];  // Extract the action (e.g., 'north', 'complete')
+    const action = customIdParts[0];  // Action: forfeit, complete, etc.
+    const eventType = customIdParts[1] || 'event'; // Extract event type
+    const teamName = customIdParts.pop(); // Extract team name from the custom ID
 
-    // Check for commands that handle button interactions
-    const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
-
-    if (command && typeof command.handleButton === 'function') {
-      // Determine if the action is a movement action
-      if (['north', 'south', 'west', 'east'].includes(action)) {
-        const teamName = customIdParts.pop(); // Extract team name from the custom ID
-
-        // Handle directional movement
-        await handleDirectionMove(interaction, teamName, action);  // Call the movement handler
-      } else if (action === 'complete') {
-        // Handle task completion logic
-        await command.handleButton(interaction); // Call task completion logic if applicable
-      } else {
-        // Handle other button actions if needed
-        await command.handleButton(interaction); // Fallback to existing command handling
-      }
+    if (['north', 'south', 'west', 'east'].includes(action)) {
+      // Handle directional movement
+      await handleDirectionMove(interaction, teamName, action);  // Call the movement handler
+    } else if (action === 'forfeit') {
+      // Handle event forfeiture
+      await handleForfeitEvent(interaction, teamName, eventType);
+    } else if (action === 'complete') {
+      // Handle event completion by event helper
+      await handleCompleteEvent(interaction, teamName, eventType);
     } else {
-      logger(`No command found for button interaction: ${interaction.customId}`);
-      await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
+      // Handle any other button interactions (e.g., transport links, etc.)
+      const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
+      if (command && typeof command.handleButton === 'function') {
+        await command.handleButton(interaction);
+      } else {
+        logger(`No command found for button interaction: ${interaction.customId}`);
+        await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
+      }
     }
   } catch (error) {
     logger('Error handling button interaction:', error);
     await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
   }
 }
-
 
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
