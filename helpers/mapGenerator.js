@@ -95,10 +95,8 @@ async function generateMapImage(teamData, showAllTeams = true) {
     }
   }
 
-  // Use a static filename for the map
-  const outputPath = `./maps/map.png`;
   const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync(outputPath, buffer);
+  fs.writeFileSync('./map.png', buffer);
 
   return outputPath;
 }
