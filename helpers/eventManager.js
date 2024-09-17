@@ -1,6 +1,7 @@
 // eventManager.js
 
 const { rollForReward } = require('./rewardsManager');
+const { logger } = require('./logger');
 const { applyRandomPenalty } = require('./penaltiesManager');
 
 function generateEventMessage(tileData, eventIndex = 0) {
