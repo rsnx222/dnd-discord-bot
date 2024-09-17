@@ -6,8 +6,18 @@ const { generateEventMessage } = require('./eventManager'); // Assuming events a
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false) {
   try {
+    // Validate the format of newTile before proceeding
+    if (!newTile || typeof newTile !== 'string' || newTile.length < 2) {
+      logger('Invalid tile format detected:', newTile);
+      await interaction.editReply({ content: 'Invalid tile format detected. Please check the movement logic.' });
+      return;
+    }
+
+    logger(`sendMapAndEvent: team ${teamName} moving to tile ${newTile}`);
+    
     // Fetch team data and generate the map
     const mapImagePath = await generateMapImage([{ teamName, exploredTiles: [newTile] }], false);
+    logger(`Map generated for team ${teamName} at tile ${newTile}, image path: ${mapImagePath}`);
     
     // Send the map image to the team's channel
     await channel.send({
@@ -17,6 +27,7 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
     // Handle the event at the new tile
     if (!isEventComplete) {
+      logger(`Generating event message for tile ${newTile}`);
       const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
     }
