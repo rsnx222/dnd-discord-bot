@@ -5,7 +5,7 @@ const { logger } = require('./logger');
 const { generateEventMessage, handleEventAction } = require('./eventManager');
 const { generateEventButtons } = require('./eventButtonHelper');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const databaseHelper = require('./databaseHelper'); // Import databaseHelper
+const tiles = require('../config/tiles');
 
 async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
   try {
@@ -21,15 +21,21 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
     // Fetch team data and generate the map
     const mapImagePath = await generateMapImage([teamData], false);
     logger(`Map generated for team ${teamName} at tile ${newTile}, image path: ${mapImagePath}`);
-    
+
     // Send the map image to the team's channel
     await channel.send({
       files: [{ attachment: mapImagePath, name: 'map.png' }],
       content: `Team ${teamName} has moved to tile ${newTile}.`,
     });
 
-    // Fetch tile data for event handling
-    const tileData = await databaseHelper.getTileData(newTile);
+    // Fetch tile data from tiles.js
+    const tileData = tiles[newTile];
+    if (!tileData) {
+      logger(`Tile data not found for tile ${newTile}`);
+      await interaction.editReply({ content: `No events found for tile ${newTile}.` });
+      return;
+    }
+
     const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
 
     if (eventTypes.includes('reset')) {
@@ -63,14 +69,14 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
       await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
     } else {
       // Handle events normally
-      const eventMessage = generateEventMessage({ tileName: newTile }, eventIndex);
+      const eventMessage = generateEventMessage(tileData, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n${eventMessage}`);
 
       const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
       await channel.send({ components: [eventButtons] });
 
       // Handle event actions (if applicable)
-      const actionResult = await handleEventAction('complete', { tileName: newTile }, eventIndex, teamData);
+      const actionResult = await handleEventAction('complete', tileData, eventIndex, teamData);
       await channel.send(actionResult);
     }
 
