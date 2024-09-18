@@ -10,6 +10,11 @@ require('dotenv').config();
 const { handleDirectionMove } = require('./helpers/movementLogic');
 const { handleForfeitEvent, handleCompleteEvent } = require('./helpers/eventActionHandler');
 
+// Prevent duplicate execution
+let isReadyTriggered = false;
+logger('Starting bot...');
+
+// Initialize Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -39,6 +44,7 @@ for (const file of loadFiles('contextMenus')) {
   client.contextMenus.set(contextMenu.data.name, contextMenu);
 }
 
+// Randomized bot activities
 const activities = [
   { type: ActivityType.Playing, message: "an epic battle against bosses" },
   { type: ActivityType.Playing, message: "a dangerous dungeon crawl" },
@@ -52,12 +58,20 @@ const activities = [
   { type: ActivityType.Listening, message: "tales of battles and lost treasures" },
 ];
 
+// Function to set a random activity
 function setRandomActivity() {
   const randomActivity = activities[Math.floor(Math.random() * activities.length)];
   client.user.setActivity(randomActivity.message, { type: randomActivity.type });
 }
 
 client.once(Events.ClientReady, async () => {
+  // Avoid executing this block more than once
+  if (isReadyTriggered) {
+    logger('ClientReady event triggered more than once!');
+    return;
+  }
+  isReadyTriggered = true;
+
   logger('Bot is online!');
 
   setRandomActivity();
@@ -78,6 +92,7 @@ client.once(Events.ClientReady, async () => {
   }
 });
 
+// Handle command interactions
 async function handleCommandInteraction(interaction) {
   const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
   if (!command) return logger(`No command or context menu found for: ${interaction.commandName}`);
@@ -89,6 +104,41 @@ async function handleCommandInteraction(interaction) {
   }
 }
 
+// Handle button interactions
+async function handleButtonInteraction(interaction) {
+  const [action, directionOrType, teamName] = interaction.customId.split('_');
+  if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
+    return await handleDirectionMove(interaction, teamName, directionOrType);
+  }
+  if (action === 'forfeit') {
+    return await handleForfeitEvent(interaction, teamName, directionOrType);
+  }
+  if (action === 'complete') {
+    return await handleCompleteEvent(interaction, teamName, directionOrType);
+  }
+  const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
+  if (command && typeof command.handleButton === 'function') {
+    return await command.handleButton(interaction);
+  }
+  logger(`No command found for button interaction: ${interaction.customId}`);
+  await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
+}
+
+// Handle modal interactions
+async function handleModalInteraction(interaction) {
+  const { customId } = interaction;
+  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('resetteam') : client.commands.get('moveteamcoord');
+  if (command && typeof command.handleModal === 'function') {
+    try {
+      await command.handleModal(interaction);
+    } catch (error) {
+      logger('Error handling modal interaction:', error);
+      await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
+    }
+  }
+}
+
+// Main interaction handler
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) return await handleCommandInteraction(interaction);
@@ -102,4 +152,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+// Log the bot in
 client.login(process.env.DISCORD_TOKEN).catch(error => logger('Failed to login the bot:', error));
