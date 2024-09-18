@@ -83,12 +83,7 @@ client.once(Events.ClientReady, async () => {
   try {
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
-    
-    // Register context menu commands
-    await commandManager.registerContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
-
-    // Register slash commands
-    await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+    await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
 
     logger('Commands and context menus registered successfully.');
   } catch (error) {
