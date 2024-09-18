@@ -31,11 +31,11 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
     const combined = [...commands, ...contextMenus];
     logger(`Total commands & context menus to register: ${combined.length}`);
 
-    const batchSize = 1;
+    const batchSize = 1; // Start with small batches
     for (let i = 0; i < combined.length; i += batchSize) {
       const batch = combined.slice(i, i + batchSize);
       await registerBatch(batch, DISCORD_CLIENT_ID, guildId);
-      await delay(10000);  // Delay between batches to avoid rate limiting
+      await delay(20000);  // Increased delay between batches to 20 seconds to avoid rate limiting
     }
 
     logger('Finished registering all commands and context menus.');
@@ -44,18 +44,18 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
   }
 }
 
-// Retry logic for batch registration
-async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 3) {
+// Retry logic for batch registration with exponential backoff
+async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 3, delayFactor = 1000) {
   try {
     logger(`Attempting to register commands batch: ${batch.map(cmd => cmd.name).join(', ')}`);
     const response = await withTimeout(
-      rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID, guildId), { body: batch }),
-      30000 // 30-second timeout
+      rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: batch }),
+      30000 // Increased timeout to 30 seconds
     );
     logger(`Successfully registered batch: ${batch.map(cmd => cmd.name).join(', ')}`);
 
     // Capture and log rate limit headers if available
-    if (response.headers) {
+    if (response?.headers) {
       const rateLimitRemaining = response.headers['x-ratelimit-remaining'];
       const rateLimitReset = response.headers['x-ratelimit-reset'];
       const rateLimitLimit = response.headers['x-ratelimit-limit'];
@@ -69,15 +69,13 @@ async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 3) {
   } catch (error) {
     if (retries > 0) {
       logger(`Timeout occurred while registering batch: ${batch.map(cmd => cmd.name).join(', ')}. Retrying...`);
-      await delay(1000); // Exponential delay before retry
-      return registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries - 1); // Retry with lower retries
+      await delay(delayFactor); // Exponential backoff delay
+      return registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries - 1, delayFactor * 2); // Retry with increased delay
     } else {
       logger(`Failed to register batch after retries: ${batch.map(cmd => cmd.name).join(', ')}`, error);
     }
   }
 }
-
-
 
 // Function to wrap an API call with a timeout
 async function withTimeout(promise, ms) {
@@ -89,7 +87,7 @@ async function withTimeout(promise, ms) {
 async function deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Deleting all guild commands...');
-    const commands = await rest.get(Routes.applicationCommands(DISCORD_CLIENT_ID, guildId));
+    const commands = await rest.get(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId));
     for (const command of commands) {
       await rest.delete(Routes.applicationGuildCommand(DISCORD_CLIENT_ID, guildId, command.id));
       logger(`Deleted command: ${command.name}`);
