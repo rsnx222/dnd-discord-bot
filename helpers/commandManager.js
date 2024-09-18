@@ -1,5 +1,4 @@
 // commandManager.js
-
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -7,26 +6,36 @@ const { logger } = require('./logger');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
+async function registerCommandsAndContextMenusWithThrottling(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
 
     const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
     const commands = commandFiles.flatMap(file => {
       const command = require(`../commands/${file}`);
+      logger(`Registering command(s) from: ${file}`);
       return Array.isArray(command.data) ? command.data.map(cmd => cmd.toJSON()) : [command.data.toJSON()];
     });
 
     const contextMenuFiles = fs.readdirSync(path.join(__dirname, '../contextMenus')).filter(file => file.endsWith('.js'));
     const contextMenus = contextMenuFiles.map(file => {
       const contextMenu = require(`../contextMenus/${file}`);
+      logger(`Registering context menu from: ${file}`);
       return contextMenu.data.toJSON();
     });
 
     const combined = [...commands, ...contextMenus];
-    await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: combined });
 
-    logger('Successfully reloaded guild (/) slash commands and context menus.');
+    // Register them with throttling
+    for (const command of combined) {
+      await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] });
+      logger(`Registered command/context menu: ${command.name}`);
+
+      // Throttle the requests to avoid hitting rate limits
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    logger('Commands and context menus registered successfully with throttling.');
   } catch (error) {
     logger('Error registering commands and context menus:', error);
   }
@@ -59,7 +68,7 @@ async function deleteAllGlobalCommands(DISCORD_CLIENT_ID) {
 }
 
 module.exports = {
-  registerCommandsAndContextMenus,
+  registerCommandsAndContextMenusWithThrottling,
   deleteAllGuildCommands,
   deleteAllGlobalCommands,
 };
