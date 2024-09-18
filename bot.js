@@ -65,9 +65,8 @@ function setRandomActivity() {
 }
 
 client.once(Events.ClientReady, async () => {
-  // Avoid executing this block more than once
   if (isReadyTriggered) {
-    logger('ClientReady event triggered more than once!');
+    logger('ClientReady event triggered more than once! Skipping...');
     return;
   }
   isReadyTriggered = true;
@@ -78,10 +77,14 @@ client.once(Events.ClientReady, async () => {
   setInterval(setRandomActivity, 1800000);
 
   try {
-    logger('Deleting all guild commands...');
+    // Adding log to trace where this might get called twice
+    logger('About to delete all guild commands...');
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-    logger('Deleting all global commands...');
+    logger('Guild commands deleted successfully.');
+
+    logger('About to delete all global commands...');
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+    logger('Global commands deleted successfully.');
 
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
     await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
@@ -152,5 +155,4 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// Log the bot in
 client.login(process.env.DISCORD_TOKEN).catch(error => logger('Failed to login the bot:', error));
