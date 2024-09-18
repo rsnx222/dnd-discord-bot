@@ -92,11 +92,88 @@ async function updateTeamStatus(teamName, status) {
   }
 }
 
-// Export functions for use in bot.js
+// **New Functions for Event Progress Table**
+
+// Function to insert a new event progress entry for a team
+async function insertNewEventProgress(teamName, eventName, requiredScreenshots = 0, requiredItems = 0) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'INSERT INTO event_progress (team_name, event_name, approved_screenshots, approved_items) VALUES (?, ?, ?, ?)',
+      [teamName, eventName, requiredScreenshots, requiredItems]
+    );
+  } catch (error) {
+    logger('Error inserting new event progress into the database:', error);
+    throw error;
+  }
+}
+
+// Function to update approved screenshots for an event
+async function updateApprovedScreenshots(teamName, eventName, approvedScreenshots) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'UPDATE event_progress SET approved_screenshots = ? WHERE team_name = ? AND event_name = ?',
+      [approvedScreenshots, teamName, eventName]
+    );
+  } catch (error) {
+    logger('Error updating approved screenshots in the database:', error);
+    throw error;
+  }
+}
+
+// Function to update approved items for an event
+async function updateApprovedItems(teamName, eventName, approvedItems) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'UPDATE event_progress SET approved_items = ? WHERE team_name = ? AND event_name = ?',
+      [approvedItems, teamName, eventName]
+    );
+  } catch (error) {
+    logger('Error updating approved items in the database:', error);
+    throw error;
+  }
+}
+
+// Function to mark an event as completed
+async function markEventAsCompleted(teamName, eventName) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'UPDATE event_progress SET status = "completed" WHERE team_name = ? AND event_name = ?',
+      [teamName, eventName]
+    );
+  } catch (error) {
+    logger('Error marking event as completed in the database:', error);
+    throw error;
+  }
+}
+
+// Function to mark an event as forfeited
+async function markEventAsForfeited(teamName, eventName) {
+  try {
+    const connection = await getDBConnection();
+    await connection.execute(
+      'UPDATE event_progress SET status = "forfeited" WHERE team_name = ? AND event_name = ?',
+      [teamName, eventName]
+    );
+  } catch (error) {
+    logger('Error marking event as forfeited in the database:', error);
+    throw error;
+  }
+}
+
+// Export functions for use in bot.js and other modules
 module.exports = {
   getTeamData,
   getTeamChannelId,
   updateTeamLocation,
   updateExploredTiles,
-  updateTeamStatus
+  updateTeamStatus,
+  insertNewEventProgress,
+  updateApprovedScreenshots,
+  updateApprovedItems,
+  markEventAsCompleted,
+  markEventAsForfeited
 };

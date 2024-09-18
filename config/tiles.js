@@ -4,27 +4,29 @@ module.exports = {
   A4: {
     event_type: 'challenge',
     description: 'Survive the wilderness and take on 15 special Wilderness Flash Events.',
-    task: 'Participate and complete 15 Wilderness Flash Events.'
+    task: 'Screenshot rewards from 15x special wilderness flash events.',
+    requiredScreenshots: 15
   },
   A5: {
     event_type: 'reset',
     description: 'Your team has been reset to the starting position.',
-    task: 'Move from this tile to continue your journey.',
+    task: 'Pick a direction to begin your journey...'
   },
   A6: {
     event_type: 'challenge',
     description: 'Complete 10 Reaper Task assignments from Death.',
-    task: 'Complete 10 Reaper Task assignments and provide screenshots of task completions.'
+    task: 'Screenshot 10x reaper task completions.',
+    requiredScreenshots: 10
   },
   A8: {
     event_type: 'quest',
     description: 'Begin a quest to uncover the secrets of the forgotten temple.',
-    task: 'Solve in-game puzzles and riddles to uncover the secrets of the forgotten temple.'
+    task: 'TBC'
   },
   A9: {
     event_type: 'transport link',
     description: 'Travel through the underwater tunnel...',
-    task: 'Use the underwater tunnel to move to the next location.'
+    task: 'Travel through the underwater tunnel...'
   },
   B1: {
     event_type: 'quest',
@@ -33,33 +35,39 @@ module.exports = {
   },
   B3: {
     event_type: 'boss',
-    description: 'Throwback to the year 2000 to take down the KBD and find yourselves an ornament kit.',
-    task: 'Defeat the King Black Dragon and obtain an ornament kit.'
+    description: 'Throwback to the year 2000 to take down the KBD and find yourselves 2 ornament kits.',
+    task: 'Provide 2x screenshots of a KBD ornament kit drop.',
+    requiredItems: 2
   },
   B4: {
     event_type: 'challenge',
-    description: 'Spam your clan chat with 15 drop broadcasts worth at least 10,000,000gp.',
-    task: 'Provide screenshots of 15 drop broadcasts worth at least 10 million gp in total.'
+    description: 'Spam your clan chat with 15 broadcasts worth at least 10,000,000gp.',
+    task: '15 screenshots: clan broadcast worth at least 10m GP each.',
+    requiredScreenshots: 15
   },
   B5: {
     event_type: 'boss',
     description: 'You find a trap door! Pick a team member to head into the lair of Tarn Razorlor and enchant their salve amulet inside...',
-    task: 'Choose a team member to enter Tarn Razorlor’s lair and enchant a salve amulet by completing a dungeon challenge.'
+    task: 'Choose a team member to enter Tarn Razorlor’s lair and enchant a salve amulet by completing a dungeon challenge.',
+    requiredScreenshots: 1
   },
   B6: {
     event_type: 'boss',
     description: 'Gain access to the dungeon by taking on Araxxi enough times to create your own full weapon.',
-    task: 'Defeat Araxxi multiple times to collect enough pieces for a full Araxyte weapon.'
+    task: '4 screenshots of Rax loot: 1x any hilt + 1 of each leg piece (1 bottom + 1 middle + 1 top).',
+    requiredItems: 4
   },
   B8: {
     event_type: 'boss',
-    description: 'Defeat Raksha in its shadowy jail and locate a codex drop (Divert, Greater Chain or Greater Ricochet).',
-    task: 'Defeat Raksha and obtain a codex drop (Divert, Greater Chain, or Greater Ricochet).'
+    description: 'Defeat Raksha in its shadowy jail and locate 2 codex drops (Divert, Greater Chain or Greater Ricochet).',
+    task: '2 screenshots of any Raksha codex on the ground: Divert, Greater Chain, or Greater Ricochet.',
+    requiredItems: 2
   },
   C1: {
     event_type: 'challenge',
-    description: 'Complete 150 easy or medium clue scrolls.',
-    task: 'Provide screenshots of completing 150 easy or medium clue scrolls.'
+    description: 'Complete 150 easy or medium clue scrolls as a team.',
+    task: 'Provide screenshots of clue log before + after task showing 150 easy or medium clue scrolls in total across your team.',
+    requiredItems: 150
   },
   C3: {
     event_type: 'transport link',
@@ -84,7 +92,8 @@ module.exports = {
   C8: {
     event_type: 'challenge',
     description: 'Prepare to head into the underwater tunnel by defeating the Ambassador as a team.',
-    task: 'Defeat the Ambassador as a team before using the underwater tunnel.'
+    task: '1 screenshot of 3 team members inside the Ambassador instance after it\'s dead.',
+    requiredScreenshots: 1
   },
   C9: {
     event_type: 'transport link',
@@ -94,7 +103,8 @@ module.exports = {
   C10: {
     event_type: 'challenge',
     description: 'Face-off to 15 different elite slayer monster spawns.',
-    task: 'Defeat 15 different elite slayer monster spawns and provide evidence of your kills.'
+    task: 'Screenshot the chat window of 15 *different* elite slayer monster spawns.',
+    requiredScreenshots: 15
   },
   D1: {
     event_type: 'transport link',
@@ -103,8 +113,9 @@ module.exports = {
   },
   D2: {
     event_type: 'boss',
-    description: 'Get any piece of ancient warrior\'s equipment as a drop from the Chaos Elemental (Statius, Vesta, Zurial or Morrigan).',
-    task: 'Defeat the Chaos Elemental and obtain a piece of ancient warrior’s equipment (Statius, Vesta, Zurial, or Morrigan).'
+    description: 'Get any piece of ancient warrior\'s equipment as a drop from the Chaos Elemental.',
+    task: '1 screenshot of an ancient warrior\'s drop from the Chaos Elemental (NOT revenants). Note: This can be anything with Statius, Vesta, Zurial, or Morrigan in the name.',
+    requiredItems: 1
   },
   D4: {
     event_type: 'transport link',
@@ -114,16 +125,19 @@ module.exports = {
   D5: {
     event_type: 'boss',
     description: 'Keep your entire team alive to the end of a Solak kill.',
-    task: 'Defeat Solak while keeping your entire team alive through the encounter.'
+    task: 'A screenshot of all team members inside the Solak instance after it\'s dead.',
+    requiredScreenshots: 1
   },
   D9: {
     event_type: 'boss',
-    description: 'Head deep into the God Wars Dungeons to find one of each hilt (GWD1), and one of each crest (GWD2).',
-    task: 'Collect one of each hilt from GWD1 and one of each crest from GWD2 by defeating bosses.'
+    description: 'Head deep into the God Wars Dungeons to find one of each GWD1 hilt and and one of each GWD2 crest.',
+    task: '8 screenshots - 4 hilts from GWD1 (one of each), 4 crests from GWD2 (one of each).',
+    requiredItems: 8
   },
   E6: {
     event_type: 'challenge',
-    description: 'Complete 100 elite or master clue scrolls.',
-    task: 'Provide screenshots of completing 100 elite or master clue scrolls.'
+    description: 'Complete 100 elite or master clue scrolls as a team.',
+    task: 'Provide screenshots of clue log before + after task showing 100 elite or master clue scrolls in total across your team.',
+    requiredItems: 100
   }
 };

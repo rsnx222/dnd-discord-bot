@@ -29,20 +29,26 @@ if (!settings.DISCORD_CLIENT_ID || !settings.guildId) {
   process.exit(1);
 }
 
-// Create a Collection to store commands
+// Create a Collection to store commands and context menus
 client.commands = new Collection();
+client.contextMenus = new Collection();
 
-// Dynamically load all commands from the /commands directory
+// Dynamically load all slash commands from the /commands directory
 const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
-
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  
   if (Array.isArray(command.data)) {
     command.data.forEach(cmd => client.commands.set(cmd.name, command));
   } else {
     client.commands.set(command.data.name, command);
   }
+}
+
+// Dynamically load all context menu commands from the /contextMenus directory
+const contextMenuFiles = fs.readdirSync(path.join(__dirname, 'contextMenus')).filter(file => file.endsWith('.js'));
+for (const file of contextMenuFiles) {
+  const contextMenu = require(`./contextMenus/${file}`);
+  client.contextMenus.set(contextMenu.data.name, contextMenu);
 }
 
 // Randomized bot activities
@@ -73,12 +79,19 @@ client.once(Events.ClientReady, async () => {
   setRandomActivity();
   setInterval(setRandomActivity, 1800000);
 
-  // Clear old commands and register the current ones from the /commands directory
+  // Clear old commands and register the current ones from the /commands and /contextMenus directories
   try {
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+    
+    // Register slash commands
     await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-    logger('Commands registered successfully.');
+
+    // Register context menu commands
+    const contextMenuData = client.contextMenus.map(menu => menu.data.toJSON());
+    await client.application.commands.set(contextMenuData, settings.guildId);
+
+    logger('Commands and context menus registered successfully.');
   } catch (error) {
     logger('Error during command registration:', error);
   }
@@ -100,6 +113,22 @@ async function handleCommandInteraction(interaction) {
   }
 }
 
+// Handle context menu interactions
+async function handleContextMenuInteraction(interaction) {
+  const contextMenu = client.contextMenus.get(interaction.commandName);
+  if (!contextMenu) {
+    logger(`No context menu found for: ${interaction.commandName}`);
+    return;
+  }
+
+  try {
+    await contextMenu.execute(interaction);
+  } catch (error) {
+    logger(`Error executing context menu ${interaction.commandName}:`, error);
+    await interaction.reply({ content: 'There was an error processing this action!', ephemeral: true });
+  }
+}
+
 // Handle select menu interactions
 async function handleSelectMenuInteraction(interaction) {
   const command = client.commands.get('moveteam') || client.commands.get('resetteam');
@@ -116,27 +145,21 @@ async function handleSelectMenuInteraction(interaction) {
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
   try {
-    // Split the customId into parts (e.g., 'move_north_TeamName')
     const customIdParts = interaction.customId.split('_');
-    const action = customIdParts[0];  // Action: 'move', 'forfeit', 'complete', etc.
-    const directionOrType = customIdParts[1];  // Could be direction ('north', 'south') or event type ('boss', 'puzzle')
-    const teamName = customIdParts.pop();  // Team name is always at the 
-    
+    const action = customIdParts[0];
+    const directionOrType = customIdParts[1];
+    const teamName = customIdParts.pop();
+
     logger(`Handling button interaction: ${interaction.customId}`);
     logger(`Action: ${action}, Direction/Event Type: ${directionOrType}, Team: ${teamName}`);
 
-    // Check if the action is related to directional movement
     if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
-      // Handle directional movement
-      await handleDirectionMove(interaction, teamName, directionOrType);  // Call the movement handler with direction
+      await handleDirectionMove(interaction, teamName, directionOrType);
     } else if (action === 'forfeit') {
-      // Handle event forfeiture
       await handleForfeitEvent(interaction, teamName, directionOrType);
     } else if (action === 'complete') {
-      // Handle event completion
       await handleCompleteEvent(interaction, teamName, directionOrType);
     } else {
-      // Handle any other button interactions (fallback)
       const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
       if (command && typeof command.handleButton === 'function') {
         await command.handleButton(interaction);
@@ -150,7 +173,6 @@ async function handleButtonInteraction(interaction) {
     await interaction.reply({ content: 'Failed to handle button interaction.', ephemeral: true });
   }
 }
-
 
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
@@ -184,6 +206,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) {
       await handleCommandInteraction(interaction);
+    } else if (interaction.isContextMenuCommand()) {
+      await handleContextMenuInteraction(interaction);
     } else if (interaction.isStringSelectMenu()) {
       await handleSelectMenuInteraction(interaction);
     } else if (interaction.isButton()) {
