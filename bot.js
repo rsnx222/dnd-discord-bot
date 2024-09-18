@@ -112,14 +112,13 @@ async function handleCommandInteraction(interaction) {
 async function handleContextMenuInteraction(interaction) {
   const contextMenuName = interaction.commandName;
 
+  // Log interaction command name and available context menus
   logger(`Received context menu interaction: ${contextMenuName}`);
-  
-  // Log all registered context menus
   logger(`Available context menus: ${[...client.contextMenus.keys()].join(', ')}`);
-  
+
   // Check if the context menu is registered
   const contextMenu = client.contextMenus.get(contextMenuName);
-  
+
   if (!contextMenu) {
     logger(`No context menu found for: ${contextMenuName}`);
     await interaction.reply({ content: 'No matching context menu found.', ephemeral: true });
@@ -212,7 +211,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) {
       await handleCommandInteraction(interaction);
-    } else if (interaction.isContextMenuCommand()) {
+    } else if (interaction.isMessageContextMenuCommand()) {
       await handleContextMenuInteraction(interaction);
     } else if (interaction.isStringSelectMenu()) {
       await handleSelectMenuInteraction(interaction);
@@ -226,6 +225,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
   }
 });
+
 
 // Login the bot
 client.login(process.env.DISCORD_TOKEN).catch((error) => {
