@@ -3,6 +3,12 @@
 const { logger } = require('./logger');
 const { updateApprovedScreenshots, markEventAsCompleted, getApprovedScreenshots } = require('./databaseHelper');
 
+// Helper to fetch event data from tiles.js based on event name
+function getEventData(eventName) {
+  const event = tiles.find(tile => tile.eventName === eventName);
+  return event ? event : null;
+}
+
 // Approve screenshot based on event requirements (items or screenshots)
 async function approveScreenshot(interaction, teamName, eventName) {
   try {
