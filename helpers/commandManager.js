@@ -6,6 +6,9 @@ const { logger } = require('./logger');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
+// Helper function to add a delay (throttling)
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
@@ -26,8 +29,26 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
 
     const combined = [...commands, ...contextMenus];
 
-    // Register all commands and context menus at once
-    await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: combined });
+    // Throttle requests to avoid hitting rate limits
+    logger(`Total commands & context menus to register: ${combined.length}`);
+    
+    // Loop through and register commands in batches, adding delay to avoid rate limits
+    for (const command of combined) {
+      try {
+        await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] });
+        logger(`Successfully registered: ${command.name}`);
+        // Add a small delay between each request to avoid rate-limiting
+        await delay(1000);  // 1-second delay
+      } catch (error) {
+        if (error.status === 429) {
+          const retryAfter = error.headers['retry-after'];
+          logger(`Rate limit hit. Retrying after ${retryAfter} seconds.`);
+          await delay(retryAfter * 1000);  // Retry after the specified delay
+        } else {
+          logger(`Error registering command: ${command.name}`, error);
+        }
+      }
+    }
 
     logger('Successfully reloaded guild (/) slash commands and context menus.');
   } catch (error) {
