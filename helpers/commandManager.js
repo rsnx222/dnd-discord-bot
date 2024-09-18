@@ -45,32 +45,38 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
 }
 
 // Retry logic for batch registration
-async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 2) {
+async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 3) {
   try {
     logger(`Attempting to register commands batch: ${batch.map(cmd => cmd.name).join(', ')}`);
     const response = await withTimeout(
-      rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: batch }),
-      30000 // Increased timeout to 30 seconds
+      rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID, guildId), { body: batch }),
+      30000 // 30-second timeout
     );
     logger(`Successfully registered batch: ${batch.map(cmd => cmd.name).join(', ')}`);
 
-    // Log rate-limit info
-    const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
-    const rateLimitReset = response.headers.get('x-ratelimit-reset');
-    if (rateLimitRemaining) {
-      logger(`Rate Limit Remaining: ${rateLimitRemaining}`);
-      logger(`Rate Limit Reset: ${new Date(rateLimitReset * 1000)}`);
+    // Capture and log rate limit headers if available
+    if (response.headers) {
+      const rateLimitRemaining = response.headers['x-ratelimit-remaining'];
+      const rateLimitReset = response.headers['x-ratelimit-reset'];
+      const rateLimitLimit = response.headers['x-ratelimit-limit'];
+
+      if (rateLimitRemaining) {
+        logger(`Rate Limit Remaining: ${rateLimitRemaining}`);
+        logger(`Rate Limit Reset: ${new Date(rateLimitReset * 1000).toISOString()}`);
+        logger(`Rate Limit Limit: ${rateLimitLimit}`);
+      }
     }
   } catch (error) {
     if (retries > 0) {
       logger(`Timeout occurred while registering batch: ${batch.map(cmd => cmd.name).join(', ')}. Retrying...`);
-      await delay(10000); // Delay before retry
-      return registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries - 1); // Retry
+      await delay(1000); // Exponential delay before retry
+      return registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries - 1); // Retry with lower retries
     } else {
       logger(`Failed to register batch after retries: ${batch.map(cmd => cmd.name).join(', ')}`, error);
     }
   }
 }
+
 
 
 // Function to wrap an API call with a timeout
@@ -83,7 +89,7 @@ async function withTimeout(promise, ms) {
 async function deleteAllGuildCommands(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Deleting all guild commands...');
-    const commands = await rest.get(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId));
+    const commands = await rest.get(Routes.applicationCommands(DISCORD_CLIENT_ID, guildId));
     for (const command of commands) {
       await rest.delete(Routes.applicationGuildCommand(DISCORD_CLIENT_ID, guildId, command.id));
       logger(`Deleted command: ${command.name}`);
