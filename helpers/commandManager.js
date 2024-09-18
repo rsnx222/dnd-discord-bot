@@ -31,7 +31,7 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
     const combined = [...commands, ...contextMenus];
     logger(`Total commands & context menus to register: ${combined.length}`);
 
-    const batchSize = 3;
+    const batchSize = 1;
     for (let i = 0; i < combined.length; i += batchSize) {
       const batch = combined.slice(i, i + batchSize);
       await registerBatch(batch, DISCORD_CLIENT_ID, guildId);
@@ -45,24 +45,33 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
 }
 
 // Retry logic for batch registration
-async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 3) {
+async function registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries = 2) {
   try {
     logger(`Attempting to register commands batch: ${batch.map(cmd => cmd.name).join(', ')}`);
     const response = await withTimeout(
       rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: batch }),
-      30000
+      30000 // Increased timeout to 30 seconds
     );
     logger(`Successfully registered batch: ${batch.map(cmd => cmd.name).join(', ')}`);
+
+    // Log rate-limit info
+    const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+    const rateLimitReset = response.headers.get('x-ratelimit-reset');
+    if (rateLimitRemaining) {
+      logger(`Rate Limit Remaining: ${rateLimitRemaining}`);
+      logger(`Rate Limit Reset: ${new Date(rateLimitReset * 1000)}`);
+    }
   } catch (error) {
     if (retries > 0) {
       logger(`Timeout occurred while registering batch: ${batch.map(cmd => cmd.name).join(', ')}. Retrying...`);
-      await delay(1000); // Delay before retry
+      await delay(10000); // Delay before retry
       return registerBatch(batch, DISCORD_CLIENT_ID, guildId, retries - 1); // Retry
     } else {
       logger(`Failed to register batch after retries: ${batch.map(cmd => cmd.name).join(', ')}`, error);
     }
   }
 }
+
 
 // Function to wrap an API call with a timeout
 async function withTimeout(promise, ms) {
