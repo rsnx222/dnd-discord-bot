@@ -2,6 +2,7 @@
 
 const { ContextMenuCommandBuilder, ApplicationCommandType } = require('discord.js');
 const { approveScreenshot } = require('../helpers/approveRejectScreenshot');
+const { getTeamLocation } = require('../helpers/databaseHelper');
 
 module.exports = {
   data: new ContextMenuCommandBuilder()
@@ -10,18 +11,26 @@ module.exports = {
 
   async execute(interaction) {
     const message = interaction.targetMessage;
-    const eventName = extractEventFromMessage(message);  // Logic to determine the event from the message content
+    const teamName = extractTeamNameFromChannel(interaction.channel.name);  // Get team name from channel
+    const currentTile = await getTeamLocation(teamName);  // Get the team's current tile
 
-    if (!eventName) {
-      await interaction.reply({ content: 'No event found for this screenshot.', ephemeral: true });
+    const taskData = getTaskForTile(currentTile);  // Fetch task data from tiles.js based on tile
+
+    if (!taskData) {
+      await interaction.reply({ content: 'No task found for this screenshot.', ephemeral: true });
       return;
     }
 
-    await approveScreenshot(interaction, eventName);
+    await approveScreenshot(interaction, teamName, taskData.eventName);  // Use task data from tile
   }
 };
 
-function extractEventFromMessage(message) {
-  // Add logic here to extract event name from message content or metadata
-  return /* extracted event name */;
+function extractTeamNameFromChannel(channelName) {
+  return channelName.charAt(0).toUpperCase() + channelName.slice(1).toLowerCase();  // Converts 'orange' to 'Orange'
+}
+
+function getTaskForTile(tile) {
+  // Logic to fetch task details from tiles.js
+  const tiles = require('../config/tiles');
+  return tiles[tile] ? tiles[tile].task : null;  // Fetch task data for the tile
 }

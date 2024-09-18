@@ -1,7 +1,7 @@
 // approveRejectScreenshot.js
 
 const { logger } = require('./logger');
-const { updateApprovedScreenshots, getApprovedScreenshots, updateApprovedItems } = require('./databaseHelper');
+const { updateApprovedScreenshots, markEventAsCompleted, getApprovedScreenshots } = require('./databaseHelper');
 
 // Approve screenshot based on event requirements (items or screenshots)
 async function approveScreenshot(interaction, teamName, eventName) {
@@ -17,10 +17,13 @@ async function approveScreenshot(interaction, teamName, eventName) {
 
       await updateApprovedScreenshots(teamName, eventName, updatedApproved);
 
+      // Add tick emoji to the original message
+      await interaction.targetMessage.react('✅');
+
       await interaction.reply({ content: `Screenshot approved for ${teamName}. Total approved: ${updatedApproved}/${requiredScreenshots}`, ephemeral: true });
 
       if (updatedApproved >= requiredScreenshots) {
-        await markTaskAsCompleted(teamName, eventName);
+        await markEventAsCompleted(teamName, eventName);
         await interaction.followUp({ content: `Event ${eventName} completed for ${teamName}!`, ephemeral: true });
       }
 
@@ -30,10 +33,13 @@ async function approveScreenshot(interaction, teamName, eventName) {
 
       await updateApprovedItems(teamName, eventName, updatedApproved);
 
+      // Add tick emoji to the original message
+      await interaction.targetMessage.react('✅');
+
       await interaction.reply({ content: `Item approved for ${teamName}. Total approved: ${updatedApproved}/${requiredItems}`, ephemeral: true });
 
       if (updatedApproved >= requiredItems) {
-        await markTaskAsCompleted(teamName, eventName);
+        await markEventAsCompleted(teamName, eventName);
         await interaction.followUp({ content: `Event ${eventName} completed for ${teamName}!`, ephemeral: true });
       }
     } else {
@@ -46,9 +52,13 @@ async function approveScreenshot(interaction, teamName, eventName) {
   }
 }
 
+// Reject screenshot and respond with cross emoji
 async function rejectScreenshot(interaction, teamName, eventName) {
   try {
-    await interaction.reply({ content: `Screenshot rejected for ${teamName}.`, ephemeral: true });
+    // Add cross emoji to the original message
+    await interaction.targetMessage.react('❌');
+
+    await interaction.reply({ content: `Screenshot rejected for ${teamName} in event ${eventName}.`, ephemeral: true });
   } catch (error) {
     logger('Error rejecting screenshot:', error);
     await interaction.reply({ content: 'Failed to reject screenshot.', ephemeral: true });
