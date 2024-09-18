@@ -110,20 +110,28 @@ async function handleCommandInteraction(interaction) {
 
 // Handle context menu interactions
 async function handleContextMenuInteraction(interaction) {
-  const contextMenu = client.contextMenus.get(interaction.commandName);
+  const contextMenuName = interaction.commandName;
+  
+  logger(`Received context menu interaction: ${contextMenuName}`);
+  
+  // Check if the context menu is registered
+  const contextMenu = client.contextMenus.get(contextMenuName);
+  
   if (!contextMenu) {
-    logger(`No context menu found for: ${interaction.commandName}`);
+    logger(`No context menu found for: ${contextMenuName}`);
+    await interaction.reply({ content: 'No matching context menu found.', ephemeral: true });
     return;
   }
-
+  
   try {
-    logger(`Executing context menu: ${interaction.commandName}`);
+    logger(`Executing context menu: ${contextMenuName}`);
     await contextMenu.execute(interaction);  // Execute the context menu handler
   } catch (error) {
-    logger(`Error executing context menu ${interaction.commandName}:`, error);
+    logger(`Error executing context menu ${contextMenuName}:`, error);
     await interaction.reply({ content: 'There was an error processing this action!', ephemeral: true });
   }
 }
+
 
 
 // Handle select menu interactions
