@@ -108,17 +108,19 @@ async function handleCommandInteraction(interaction) {
   }
 }
 
+// Handle context menu interactions
 async function handleContextMenuInteraction(interaction) {
   const contextMenuName = interaction.commandName;
 
   logger(`Received context menu interaction: ${contextMenuName}`);
   
+  // Log all registered context menus
+  logger(`Available context menus: ${[...client.contextMenus.keys()].join(', ')}`);
+  
   // Check if the context menu is registered
   const contextMenu = client.contextMenus.get(contextMenuName);
-
+  
   if (!contextMenu) {
-    // Log all registered context menus
-    logger(`Available context menus: ${[...client.contextMenus.keys()].join(', ')}`);
     logger(`No context menu found for: ${contextMenuName}`);
     await interaction.reply({ content: 'No matching context menu found.', ephemeral: true });
     return;
