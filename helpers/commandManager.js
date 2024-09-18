@@ -6,7 +6,7 @@ const { logger } = require('./logger');
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-async function registerCommandsAndContextMenusWithThrottling(DISCORD_CLIENT_ID, guildId) {
+async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
 
@@ -26,16 +26,10 @@ async function registerCommandsAndContextMenusWithThrottling(DISCORD_CLIENT_ID, 
 
     const combined = [...commands, ...contextMenus];
 
-    // Register them with throttling
-    for (const command of combined) {
-      await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] });
-      logger(`Registered command/context menu: ${command.name}`);
+    // Register all commands and context menus at once
+    await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: combined });
 
-      // Throttle the requests to avoid hitting rate limits
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    logger('Commands and context menus registered successfully with throttling.');
+    logger('Successfully reloaded guild (/) slash commands and context menus.');
   } catch (error) {
     logger('Error registering commands and context menus:', error);
   }
@@ -68,7 +62,7 @@ async function deleteAllGlobalCommands(DISCORD_CLIENT_ID) {
 }
 
 module.exports = {
-  registerCommandsAndContextMenusWithThrottling,
+  registerCommandsAndContextMenus,
   deleteAllGuildCommands,
   deleteAllGlobalCommands,
 };
