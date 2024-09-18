@@ -79,7 +79,7 @@ client.once(Events.ClientReady, async () => {
   setRandomActivity();
   setInterval(setRandomActivity, 1800000);
 
-  // Clear old commands and register the current ones from the /commands and /contextMenus directories
+  // Clear and register commands
   try {
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
@@ -88,14 +88,14 @@ client.once(Events.ClientReady, async () => {
     await commandManager.registerCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
 
     // Register context menu commands
-    const contextMenuData = client.contextMenus.map(menu => menu.data.toJSON());
-    await client.application.commands.set(contextMenuData, settings.guildId);
+    await commandManager.registerContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
 
     logger('Commands and context menus registered successfully.');
   } catch (error) {
     logger('Error during command registration:', error);
   }
 });
+
 
 // Handle command interactions
 async function handleCommandInteraction(interaction) {
