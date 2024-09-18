@@ -63,18 +63,28 @@ function setRandomActivity() {
 
 client.once(Events.ClientReady, async () => {
   logger('Bot is online!');
+
   setRandomActivity();
   setInterval(setRandomActivity, 1800000);
 
   try {
+    logger('Deleting all guild commands...');
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
+    logger('Deleting all global commands...');
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+    logger('Started clearing and refreshing guild (/) slash commands and context menus.');
+
+    // Register slash commands
     await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
     logger('Commands and context menus registered successfully.');
+
+    // Add this final success log
+    logger('Bot setup completed successfully.');
   } catch (error) {
     logger('Error during command registration:', error);
   }
 });
+
 
 async function handleCommandInteraction(interaction) {
   const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
