@@ -211,22 +211,32 @@ async function handleModalInteraction(interaction) {
 // Main interaction handler
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
+    logger(`Interaction type detected: ${interaction.type}`);
+
     if (interaction.isCommand()) {
+      logger('Command interaction detected.');
       await handleCommandInteraction(interaction);
     } else if (interaction.isMessageContextMenuCommand()) {
+      logger('Message context menu interaction detected.');
       await handleContextMenuInteraction(interaction);
     } else if (interaction.isStringSelectMenu()) {
+      logger('Select menu interaction detected.');
       await handleSelectMenuInteraction(interaction);
     } else if (interaction.isButton()) {
+      logger('Button interaction detected.');
       await handleButtonInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
+      logger('Modal submit interaction detected.');
       await handleModalInteraction(interaction);
+    } else {
+      logger('Unknown interaction type detected.');
     }
   } catch (error) {
     logger('Error in interaction handling:', error);
     await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
   }
 });
+
 
 
 // Login the bot
