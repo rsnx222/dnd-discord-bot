@@ -122,12 +122,14 @@ async function handleContextMenuInteraction(interaction) {
   }
 
   try {
-    await contextMenu.execute(interaction);
+    logger(`Executing context menu: ${interaction.commandName}`);
+    await contextMenu.execute(interaction);  // Execute the context menu handler
   } catch (error) {
     logger(`Error executing context menu ${interaction.commandName}:`, error);
     await interaction.reply({ content: 'There was an error processing this action!', ephemeral: true });
   }
 }
+
 
 // Handle select menu interactions
 async function handleSelectMenuInteraction(interaction) {
