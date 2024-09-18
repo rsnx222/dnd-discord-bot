@@ -77,7 +77,7 @@ client.once(Events.ClientReady, async () => {
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
 
     logger('Registering commands and context menus...');
-    await commandManager.registerCommandsAndContextMenusWithThrottling(settings.DISCORD_CLIENT_ID, settings.guildId);
+    await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
 
     logger('Bot setup completed successfully.');
   } catch (error) {
