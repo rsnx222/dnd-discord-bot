@@ -1,5 +1,4 @@
 // commandManager.js
-
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -8,19 +7,6 @@ const { logger } = require('./logger');
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-const timeout = (promise, ms) => {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Request timed out')), ms);
-    promise.then(value => {
-      clearTimeout(timer);
-      resolve(value);
-    }).catch(reason => {
-      clearTimeout(timer);
-      reject(reason);
-    });
-  });
-};
 
 async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
   try {
@@ -44,24 +30,22 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
 
     logger(`Total commands & context menus to register: ${combined.length}`);
 
-    for (const command of combined) {
+    // Batch size of commands to register at once
+    const batchSize = 3;
+    for (let i = 0; i < combined.length; i += batchSize) {
+      const batch = combined.slice(i, i + batchSize);
       try {
-        logger(`Attempting to register command: ${command.name}`);
-        const response = await timeout(
-          rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] }),
-          10000 // 10-second timeout
-        );
-        logger(`Successfully registered command: ${command.name}`);
-        await delay(5000); // Increase delay to 5 seconds
+        logger(`Attempting to register commands batch: ${batch.map(cmd => cmd.name).join(', ')}`);
+        await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: batch });
+        logger(`Successfully registered batch: ${batch.map(cmd => cmd.name).join(', ')}`);
+        await delay(10000); // Delay between batches (10 seconds)
       } catch (error) {
-        if (error.message === 'Request timed out') {
-          logger(`Timeout occurred while registering command: ${command.name}`);
-        } else if (error.status === 429) {
+        if (error.status === 429) {
           const retryAfter = error.headers['retry-after'];
-          logger(`Rate limit hit. Retrying after ${retryAfter} seconds for command: ${command.name}`);
+          logger(`Rate limit hit. Retrying after ${retryAfter} seconds.`);
           await delay(retryAfter * 1000);
         } else {
-          logger(`Error registering command: ${command.name}`, error);
+          logger('Error registering commands batch:', error);
         }
       }
     }
