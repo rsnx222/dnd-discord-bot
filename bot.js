@@ -31,11 +31,7 @@ const loadFiles = (directory) => fs.readdirSync(path.join(__dirname, directory))
 
 for (const file of loadFiles('commands')) {
   const command = require(`./commands/${file}`);
-  if (Array.isArray(command.data)) {
-    command.data.forEach(cmd => client.commands.set(cmd.name, command));
-  } else {
-    client.commands.set(command.data.name, command);
-  }
+  client.commands.set(command.data.name, command);
 }
 
 for (const file of loadFiles('contextMenus')) {
@@ -72,19 +68,15 @@ client.once(Events.ClientReady, async () => {
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
     logger('Deleting all global commands...');
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
-
-    // Register slash commands
     await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
-    logger('Commands and context menus registered successfully.');
 
-    // Add this final success log
     logger('Bot setup completed successfully.');
   } catch (error) {
     logger('Error during command registration:', error);
   }
 });
-
 
 async function handleCommandInteraction(interaction) {
   const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
@@ -94,38 +86,6 @@ async function handleCommandInteraction(interaction) {
   } catch (error) {
     logger(`Error executing command or context menu: ${interaction.commandName}`, error);
     await interaction.reply({ content: 'There was an error executing this action!', ephemeral: true });
-  }
-}
-
-async function handleButtonInteraction(interaction) {
-  const [action, directionOrType, teamName] = interaction.customId.split('_');
-  if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
-    return await handleDirectionMove(interaction, teamName, directionOrType);
-  }
-  if (action === 'forfeit') {
-    return await handleForfeitEvent(interaction, teamName, directionOrType);
-  }
-  if (action === 'complete') {
-    return await handleCompleteEvent(interaction, teamName, directionOrType);
-  }
-  const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
-  if (command && typeof command.handleButton === 'function') {
-    return await command.handleButton(interaction);
-  }
-  logger(`No command found for button interaction: ${interaction.customId}`);
-  await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
-}
-
-async function handleModalInteraction(interaction) {
-  const { customId } = interaction;
-  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('resetteam') : client.commands.get('moveteamcoord');
-  if (command && typeof command.handleModal === 'function') {
-    try {
-      await command.handleModal(interaction);
-    } catch (error) {
-      logger('Error handling modal interaction:', error);
-      await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
-    }
   }
 }
 
