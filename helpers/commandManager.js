@@ -1,4 +1,5 @@
 // commandManager.js
+
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -48,10 +49,10 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
         logger(`Attempting to register command: ${command.name}`);
         const response = await timeout(
           rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] }),
-          10000 // Set a 10-second timeout
+          10000 // 10-second timeout
         );
         logger(`Successfully registered command: ${command.name}`);
-        await delay(2000); // Increase delay to 2 seconds to prevent rate limiting
+        await delay(5000); // Increase delay to 5 seconds
       } catch (error) {
         if (error.message === 'Request timed out') {
           logger(`Timeout occurred while registering command: ${command.name}`);
