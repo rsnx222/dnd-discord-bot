@@ -1,5 +1,3 @@
-// commandManager.js
-
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -11,6 +9,7 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
   try {
     logger('Started clearing and refreshing guild (/) slash commands and context menus.');
 
+    // Load command files
     const commandFiles = fs.readdirSync(path.join(__dirname, '../commands')).filter(file => file.endsWith('.js'));
     const commands = commandFiles.flatMap(file => {
       const command = require(`../commands/${file}`);
@@ -18,6 +17,7 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
       return Array.isArray(command.data) ? command.data.map(cmd => cmd.toJSON()) : [command.data.toJSON()];
     });
 
+    // Load context menu files
     const contextMenuFiles = fs.readdirSync(path.join(__dirname, '../contextMenus')).filter(file => file.endsWith('.js'));
     const contextMenus = contextMenuFiles.map(file => {
       const contextMenu = require(`../contextMenus/${file}`);
@@ -25,9 +25,15 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
       return contextMenu.data.toJSON();
     });
 
+    // Combine slash commands and context menus
     const combined = [...commands, ...contextMenus];
-    await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: combined });
 
+    // Log the number of commands and menus to ensure all files are loaded
+    logger(`Total commands & context menus to register: ${combined.length}`);
+
+    // Register them with Discord
+    await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: combined });
+    
     logger('Successfully reloaded guild (/) slash commands and context menus.');
   } catch (error) {
     logger('Error registering commands and context menus:', error);
