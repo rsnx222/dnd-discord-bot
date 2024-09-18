@@ -164,10 +164,27 @@ async function markEventAsForfeited(teamName, eventName) {
   }
 }
 
-// Export functions for use in bot.js and other modules
+// Function to get the current location of a team from the database
+async function getTeamLocation(teamName) {
+  try {
+    const connection = await getDBConnection();
+    const [rows] = await connection.execute('SELECT location FROM teams WHERE team_name = ?', [teamName]);
+
+    if (rows.length === 0) {
+      return null; // No location found for the team
+    }
+
+    return rows[0].location;
+  } catch (error) {
+    logger('Error fetching team location from the database:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getTeamData,
   getTeamChannelId,
+  getTeamLocation,  // Add the new function here
   updateTeamLocation,
   updateExploredTiles,
   updateTeamStatus,
