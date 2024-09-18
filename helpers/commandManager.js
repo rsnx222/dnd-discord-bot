@@ -27,7 +27,7 @@ async function registerCommands(DISCORD_CLIENT_ID, guildId) {
       }
     });
 
-    logger(commands);
+    logger(JSON.stringify(commands, null, 2));
     // Register commands with Discord
     await rest.put(
       Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId),
