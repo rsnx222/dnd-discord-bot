@@ -10,10 +10,6 @@ require('dotenv').config();
 const { handleDirectionMove } = require('./helpers/movementLogic');
 const { handleForfeitEvent, handleCompleteEvent } = require('./helpers/eventActionHandler');
 
-// Prevent duplicate execution
-let isReadyTriggered = false;
-logger('Starting bot...');
-
 // Initialize Discord client
 const client = new Client({
   intents: [
@@ -31,12 +27,16 @@ if (!process.env.DISCORD_TOKEN || !settings.DISCORD_CLIENT_ID || !settings.guild
 client.commands = new Collection();
 client.contextMenus = new Collection();
 
-// Load commands and context menus
+// Dynamically load all commands
 const loadFiles = (directory) => fs.readdirSync(path.join(__dirname, directory)).filter(file => file.endsWith('.js'));
 
 for (const file of loadFiles('commands')) {
   const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+  if (Array.isArray(command.data)) {
+    command.data.forEach(cmd => client.commands.set(cmd.name, command));
+  } else {
+    client.commands.set(command.data.name, command);
+  }
 }
 
 for (const file of loadFiles('contextMenus')) {
@@ -44,7 +44,6 @@ for (const file of loadFiles('contextMenus')) {
   client.contextMenus.set(contextMenu.data.name, contextMenu);
 }
 
-// Randomized bot activities
 const activities = [
   { type: ActivityType.Playing, message: "an epic battle against bosses" },
   { type: ActivityType.Playing, message: "a dangerous dungeon crawl" },
@@ -65,31 +64,16 @@ function setRandomActivity() {
 }
 
 client.once(Events.ClientReady, async () => {
-  if (isReadyTriggered) {
-    logger('ClientReady event triggered more than once! Skipping...');
-    return;
-  }
-  isReadyTriggered = true;
-
   logger('Bot is online!');
 
   setRandomActivity();
   setInterval(setRandomActivity, 1800000);
 
   try {
-    // Adding log to trace where this might get called twice
-    logger('About to delete all guild commands...');
     await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-    logger('Guild commands deleted successfully.');
-
-    logger('About to delete all global commands...');
     await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
-    logger('Global commands deleted successfully.');
-
-    logger('Started clearing and refreshing guild (/) slash commands and context menus.');
     await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
-
-    logger('Bot setup completed successfully.');
+    logger('Commands and context menus registered successfully.');
   } catch (error) {
     logger('Error during command registration:', error);
   }
@@ -98,7 +82,10 @@ client.once(Events.ClientReady, async () => {
 // Handle command interactions
 async function handleCommandInteraction(interaction) {
   const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
-  if (!command) return logger(`No command or context menu found for: ${interaction.commandName}`);
+  if (!command) {
+    logger(`No command or context menu found for: ${interaction.commandName}`);
+    return;
+  }
   try {
     await command.execute(interaction);
   } catch (error) {
@@ -107,7 +94,6 @@ async function handleCommandInteraction(interaction) {
   }
 }
 
-// Handle button interactions
 async function handleButtonInteraction(interaction) {
   const [action, directionOrType, teamName] = interaction.customId.split('_');
   if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
@@ -127,28 +113,11 @@ async function handleButtonInteraction(interaction) {
   await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
 }
 
-// Handle modal interactions
-async function handleModalInteraction(interaction) {
-  const { customId } = interaction;
-  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('resetteam') : client.commands.get('moveteamcoord');
-  if (command && typeof command.handleModal === 'function') {
-    try {
-      await command.handleModal(interaction);
-    } catch (error) {
-      logger('Error handling modal interaction:', error);
-      await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
-    }
-  }
-}
-
-// Main interaction handler
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) return await handleCommandInteraction(interaction);
     if (interaction.isMessageContextMenuCommand()) return await handleCommandInteraction(interaction);
-    if (interaction.isStringSelectMenu()) return await handleCommandInteraction(interaction);
     if (interaction.isButton()) return await handleButtonInteraction(interaction);
-    if (interaction.isModalSubmit()) return await handleModalInteraction(interaction);
   } catch (error) {
     logger('Error in interaction handling:', error);
     await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
