@@ -1,4 +1,5 @@
 // commandManager.js
+
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -29,28 +30,34 @@ async function registerCommandsAndContextMenus(DISCORD_CLIENT_ID, guildId) {
 
     const combined = [...commands, ...contextMenus];
 
-    // Throttle requests to avoid hitting rate limits
     logger(`Total commands & context menus to register: ${combined.length}`);
     
     // Loop through and register commands in batches, adding delay to avoid rate limits
     for (const command of combined) {
       try {
-        await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] });
-        logger(`Successfully registered: ${command.name}`);
-        // Add a small delay between each request to avoid rate-limiting
-        await delay(1000);  // 1-second delay
+        logger(`Registering command: ${command.name}`);
+        const response = await rest.put(Routes.applicationGuildCommands(DISCORD_CLIENT_ID, guildId), { body: [command] });
+
+        if (response) {
+          logger(`Successfully registered command: ${command.name}`);
+        }
+        
+        await delay(1000);  // 1-second delay between each request to avoid rate limits
+
       } catch (error) {
         if (error.status === 429) {
           const retryAfter = error.headers['retry-after'];
           logger(`Rate limit hit. Retrying after ${retryAfter} seconds.`);
           await delay(retryAfter * 1000);  // Retry after the specified delay
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+          logger(`Timeout or connection reset occurred while registering command: ${command.name}`);
         } else {
           logger(`Error registering command: ${command.name}`, error);
         }
       }
     }
 
-    logger('Successfully reloaded guild (/) slash commands and context menus.');
+    logger('Finished registering all commands and context menus.');
   } catch (error) {
     logger('Error registering commands and context menus:', error);
   }
