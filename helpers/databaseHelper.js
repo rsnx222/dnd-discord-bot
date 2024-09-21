@@ -78,29 +78,28 @@ async function updateExploredTiles(teamName, newTiles) {
   }
 }
 
-// Function to update the team's status (e.g., movement restriction)
-async function updateTeamStatus(teamName, status) {
+// Function to get event progress status (completed/etc.)
+async function getEventProgressStatus(teamName, eventName) {
   try {
     const connection = await getDBConnection();
-    await connection.execute(
-      'UPDATE teams SET status = CONCAT(status, ?, ?) WHERE team_name = ?',
-      [',', status, teamName]
+    const [rows] = await connection.execute(
+      'SELECT status FROM event_progress WHERE team_name = ? AND event_name = ?',
+      [teamName, eventName]
     );
+    return rows.length > 0 ? rows[0].status : null;
   } catch (error) {
-    logger('Error updating team status in the database:', error);
+    logger('Error fetching event progress status from the database:', error);
     throw error;
   }
 }
 
-// **New Functions for Event Progress Table**
-
-// Function to insert a new event progress entry for a team
-async function insertNewEventProgress(teamName, eventName, requiredScreenshots = 0, requiredItems = 0) {
+// Insert new event progress
+async function insertNewEventProgress(teamName, eventName, approvedScreenshots = 0, approvedItems = 0) {
   try {
     const connection = await getDBConnection();
     await connection.execute(
-      'INSERT INTO event_progress (team_name, event_name, approved_screenshots, approved_items) VALUES (?, ?, ?, ?)',
-      [teamName, eventName, requiredScreenshots, requiredItems]
+      'INSERT INTO event_progress (team_name, event_name, approved_screenshots, approved_items, status) VALUES (?, ?, ?, ?, "in_progress")',
+      [teamName, eventName, approvedScreenshots, approvedItems]
     );
   } catch (error) {
     logger('Error inserting new event progress into the database:', error);
@@ -164,6 +163,46 @@ async function markEventAsForfeited(teamName, eventName) {
   }
 }
 
+// Function to get approved screenshots for an event (added to resolve the error)
+async function getApprovedScreenshots(teamName, eventName) {
+  try {
+    const connection = await getDBConnection();
+    const [rows] = await connection.execute(
+      'SELECT approved_screenshots FROM event_progress WHERE team_name = ? AND event_name = ?',
+      [teamName, eventName]
+    );
+
+    if (rows.length === 0) {
+      return 0;  // No screenshots approved yet
+    }
+
+    return rows[0].approved_screenshots;
+  } catch (error) {
+    logger('Error fetching approved screenshots from the database:', error);
+    throw error;
+  }
+}
+
+// Function to get approved items for an event
+async function getApprovedItems(teamName, eventName) {
+  try {
+    const connection = await getDBConnection();
+    const [rows] = await connection.execute(
+      'SELECT approved_items FROM event_progress WHERE team_name = ? AND event_name = ?',
+      [teamName, eventName]
+    );
+
+    if (rows.length === 0) {
+      return 0; // No event found, assume 0 approved items
+    }
+
+    return rows[0].approved_items;
+  } catch (error) {
+    logger('Error fetching approved items from the database:', error);
+    throw error;
+  }
+}
+
 // Function to get the current location of a team from the database
 async function getTeamLocation(teamName) {
   try {
@@ -184,13 +223,15 @@ async function getTeamLocation(teamName) {
 module.exports = {
   getTeamData,
   getTeamChannelId,
-  getTeamLocation,  // Add the new function here
+  getTeamLocation,
   updateTeamLocation,
   updateExploredTiles,
-  updateTeamStatus,
+  getEventProgressStatus,
   insertNewEventProgress,
   updateApprovedScreenshots,
   updateApprovedItems,
   markEventAsCompleted,
-  markEventAsForfeited
+  markEventAsForfeited,
+  getApprovedScreenshots,
+  getApprovedItems
 };

@@ -7,7 +7,7 @@ const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('getpositions')
+    .setName('get_positions')
     .setDescription('Show positions of all teams'),
 
   async execute(interaction) {

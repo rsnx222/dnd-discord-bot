@@ -7,7 +7,7 @@ const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('getexploredtiles')
+    .setName('get_explored_tiles')
     .setDescription('Select a team to view their explored tiles in a grid view')
     .addStringOption(option =>
       option.setName('team')

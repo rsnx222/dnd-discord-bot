@@ -10,7 +10,6 @@ module.exports = {
     .setType(ApplicationCommandType.Message),  // Attach to a message (right-click context menu)
 
   async execute(interaction) {
-    const message = interaction.targetMessage;
     const teamName = extractTeamNameFromChannel(interaction.channel.name);  // Get team name from channel
     const currentTile = await getTeamLocation(teamName);  // Get the team's current tile
 
@@ -21,7 +20,7 @@ module.exports = {
       return;
     }
 
-    await rejectScreenshot(interaction, teamName, taskData.eventName);  // Use task data from tile
+    await rejectScreenshot(interaction, teamName, currentTile);  // Use current tile instead of event name
   }
 };
 
@@ -32,5 +31,5 @@ function extractTeamNameFromChannel(channelName) {
 function getTaskForTile(tile) {
   // Logic to fetch task details from tiles.js
   const tiles = require('../config/tiles');
-  return tiles[tile] ? tiles[tile].task : null;  // Fetch task data for the tile
+  return tiles[tile] ? tiles[tile] : null;  // Fetch task data for the tile
 }

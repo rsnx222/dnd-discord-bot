@@ -3,8 +3,8 @@
 const databaseHelper = require('./databaseHelper');
 const { sendMapAndEvent } = require('./sendMapAndEvent');
 const { logger } = require('./logger');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
-// Function to calculate the new tile after moving in a direction
 function calculateNewTile(currentTile, direction) {
   if (!currentTile || currentTile.length < 2) {
     logger('Invalid current tile format');
@@ -23,7 +23,6 @@ function calculateNewTile(currentTile, direction) {
   let newColIndex = colIndex;
   let newRow = row;
 
-  // Determine new column and row based on direction
   switch (direction.toLowerCase()) {
     case 'north':
       newRow -= 1;
@@ -42,13 +41,11 @@ function calculateNewTile(currentTile, direction) {
       return null;
   }
 
-  // Define map boundaries
   const MIN_COL_INDEX = 0;
   const MAX_COL_INDEX = 5;
   const MIN_ROW = 1;
   const MAX_ROW = 10;
 
-  // Ensure the new position is within bounds
   if (newColIndex < MIN_COL_INDEX || newColIndex > MAX_COL_INDEX || newRow < MIN_ROW || newRow > MAX_ROW) {
     logger('New position is out of bounds');
     return null;
@@ -59,12 +56,21 @@ function calculateNewTile(currentTile, direction) {
   return `${newColLetter}${newRow}`;
 }
 
-// Handle movement when a directional button is clicked
 async function handleDirectionMove(interaction, teamName, direction) {
   try {
-    await interaction.deferReply({ ephemeral: true });
+    const disabledButtons = interaction.message.components.map(row => {
+      return new ActionRowBuilder().addComponents(
+        row.components.map(button =>
+          ButtonBuilder.from(button).setDisabled(true)
+        )
+      );
+    });
 
-    // Fetch team data and check current location
+    await interaction.update({
+      content: `Processing movement for team ${teamName}...`,
+      components: disabledButtons,
+    });
+
     const teamData = await databaseHelper.getTeamData();
     const team = teamData.find(t => t.teamName === teamName);
 
@@ -80,19 +86,16 @@ async function handleDirectionMove(interaction, teamName, direction) {
       return interaction.editReply({ content: 'Invalid move. The team cannot move in that direction.' });
     }
 
-    // Update team's location and explored tiles
     await databaseHelper.updateTeamLocation(teamName, newTile);
     const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
     await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
 
-    // Create updated team data with the new currentLocation
     const updatedTeamData = {
       teamName: teamName,
       currentLocation: newTile,
       exploredTiles: updatedExploredTiles,
     };
 
-    // Fetch the channel and send the map and event for the new tile
     const channelId = await databaseHelper.getTeamChannelId(teamName);
     const channel = await interaction.client.channels.fetch(channelId);
     if (channel) {
@@ -105,11 +108,13 @@ async function handleDirectionMove(interaction, teamName, direction) {
 
   } catch (error) {
     logger(`Error moving team ${teamName}:`, error);
-    await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+    }
   }
 }
 
 module.exports = {
   calculateNewTile,
-  handleDirectionMove,  // Export the new function
+  handleDirectionMove,
 };

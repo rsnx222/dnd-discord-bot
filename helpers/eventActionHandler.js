@@ -4,7 +4,6 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = req
 const { logger } = require('./logger');
 const { applyPenalty, applyReward } = require('./rewardsPenaltiesHandler');
 
-// Function to handle event forfeiture
 async function handleForfeitEvent(interaction, teamName, eventType) {
   const modal = new ModalBuilder()
     .setCustomId(`forfeit_event_modal_${teamName}`)
@@ -12,7 +11,7 @@ async function handleForfeitEvent(interaction, teamName, eventType) {
 
   const input = new TextInputBuilder()
     .setCustomId('confirm_forfeit')
-    .setLabel('Type "FORFEIT" to confirm')  // Shortened label
+    .setLabel('Type "FORFEIT" to confirm')
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
@@ -22,7 +21,6 @@ async function handleForfeitEvent(interaction, teamName, eventType) {
   await interaction.showModal(modal);
 }
 
-// Function to handle event completion by an Event Helper
 async function handleCompleteEvent(interaction, teamName, eventType) {
   const modal = new ModalBuilder()
     .setCustomId(`complete_event_modal_${teamName}`)
@@ -30,7 +28,7 @@ async function handleCompleteEvent(interaction, teamName, eventType) {
 
   const input = new TextInputBuilder()
     .setCustomId('confirm_complete')
-    .setLabel('Type "COMPLETE" to confirm')  // Shortened label
+    .setLabel('Type "COMPLETE" to confirm')
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
@@ -40,7 +38,6 @@ async function handleCompleteEvent(interaction, teamName, eventType) {
   await interaction.showModal(modal);
 }
 
-// Function to handle event submission for puzzles
 async function handleSubmitPuzzleEvent(interaction, teamName) {
   const modal = new ModalBuilder()
     .setCustomId(`submit_puzzle_modal_${teamName}`)
@@ -48,7 +45,7 @@ async function handleSubmitPuzzleEvent(interaction, teamName) {
 
   const input = new TextInputBuilder()
     .setCustomId('submit_answer')
-    .setLabel('Enter your answer')  // Shortened label
+    .setLabel('Enter your answer')
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
@@ -58,11 +55,10 @@ async function handleSubmitPuzzleEvent(interaction, teamName) {
   await interaction.showModal(modal);
 }
 
-// Modal interaction handling
 async function handleModalSubmit(interaction) {
   const customIdParts = interaction.customId.split('_');
   const action = customIdParts[0];
-  const eventType = customIdParts[2];  // Extract event type from customId
+  const eventType = customIdParts[2];
   const teamName = customIdParts.pop();
 
   if (action === 'forfeit') {
@@ -83,7 +79,6 @@ async function handleModalSubmit(interaction) {
     }
   } else if (action === 'submit') {
     const answer = interaction.fields.getTextInputValue('submit_answer');
-    // Logic to handle puzzle answer submission
     await interaction.reply({ content: `Puzzle answer submitted: ${answer}`, ephemeral: true });
   }
 }

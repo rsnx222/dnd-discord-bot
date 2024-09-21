@@ -1,4 +1,4 @@
-// moveteamcoord.js
+// move_team_by_coord.js
 
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const databaseHelper = require('../helpers/databaseHelper');
@@ -9,7 +9,7 @@ const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('moveteamcoord')
+    .setName('move_team_by_coord')
     .setDescription('Move a team to a specific tile coordinate')
     .addStringOption(option =>
       option.setName('team')
@@ -26,7 +26,7 @@ module.exports = {
     const selectedTeam = interaction.options.getString('team');
 
     const modal = new ModalBuilder()
-      .setCustomId(`moveteamcoord_${selectedTeam}`)
+      .setCustomId(`move_team_by_coord_${selectedTeam}`)
       .setTitle('Enter Tile Coordinate');
 
     const textInput = new TextInputBuilder()
@@ -42,7 +42,7 @@ module.exports = {
   },
 
   async handleModal(interaction) {
-    if (!interaction.customId.startsWith('moveteamcoord_')) return;
+    if (!interaction.customId.startsWith('move_team_by_coord_')) return;
 
     const selectedTeam = interaction.customId.split('_').pop();
     const enteredTile = interaction.fields.getTextInputValue('tile_coordinate').toUpperCase();

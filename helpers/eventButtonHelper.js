@@ -6,18 +6,20 @@ const { logger } = require('../helpers/logger');
 // Function to generate event buttons based on event type
 function generateEventButtons(eventTypes, teamName, isEventCompleted = false) {
     const eventTypeArray = Array.isArray(eventTypes) ? eventTypes : [eventTypes]; // Handle multiple event types
+    const eventButtons = new ActionRowBuilder();
 
     if (isEventCompleted || eventTypeArray.every(type => type === 'transport link')) {
         // Show "Choose Direction" or "Use Transport" button only if events are completed or if the tile only has transport
-        return new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary),
+        eventButtons.addComponents(
+            new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
+        );
+        eventButtons.addComponents(
             new ButtonBuilder().setCustomId(`use_transport_${teamName}`).setLabel('Use Transport').setStyle(ButtonStyle.Secondary)
         );
+        return eventButtons;
     }
 
     // Event-specific buttons for incomplete events
-    const eventButtons = new ActionRowBuilder();
-
     eventTypeArray.forEach(eventType => {
         switch (eventType.toLowerCase()) {
             case 'boss':
@@ -36,10 +38,21 @@ function generateEventButtons(eventTypes, teamName, isEventCompleted = false) {
                     new ButtonBuilder().setCustomId(`forfeit_puzzle_${teamName}`).setLabel('Forfeit Puzzle').setStyle(ButtonStyle.Danger)
                 );
                 break;
+            case 'quest':  // Add handling for quests
+                eventButtons.addComponents(
+                    new ButtonBuilder().setCustomId(`complete_quest_${teamName}`).setLabel('Complete Quest').setStyle(ButtonStyle.Success)
+                );
+                break;
             default:
                 logger(`Unknown event type for button generation: ${eventType}`);
         }
     });
+
+    // Ensure the number of components is within the limit of 1-5
+    if (eventButtons.components.length > 5) {
+        logger('Too many buttons generated. Trimming to 5 buttons.');
+        eventButtons.components = eventButtons.components.slice(0, 5); // Trim to 5 components if exceeded
+    }
 
     return eventButtons;
 }

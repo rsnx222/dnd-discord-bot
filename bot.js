@@ -1,13 +1,14 @@
 // bot.js
-const { Client, GatewayIntentBits, Events, Collection, ActivityType } = require('discord.js');
+
+require('dotenv').config();
+
+const { Client, GatewayIntentBits, Events, Collection, ActivityType, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const commandManager = require('./helpers/commandManager');
 const { logger } = require('./helpers/logger');
-const settings = require('./config/settings');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
 const { handleDirectionMove } = require('./helpers/movementLogic');
 const { handleForfeitEvent, handleCompleteEvent } = require('./helpers/eventActionHandler');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize Discord client
 const client = new Client({
@@ -18,20 +19,13 @@ const client = new Client({
   ],
 });
 
-// Ensure necessary environment variables are available
-if (!process.env.DISCORD_TOKEN || !settings.DISCORD_CLIENT_ID || !settings.guildId) {
-  logger('Missing environment variables.');
-  process.exit(1);
-}
-
-// Create a Collection to store commands and context menus
+// Load commands and context menus
 client.commands = new Collection();
 client.contextMenus = new Collection();
 
-// Dynamically load all slash commands from the /commands directory
-const loadFiles = (directory) => fs.readdirSync(path.join(__dirname, directory)).filter(file => file.endsWith('.js'));
-
-for (const file of loadFiles('commands')) {
+// Load all commands from the /commands directory
+const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   if (Array.isArray(command.data)) {
     command.data.forEach(cmd => client.commands.set(cmd.name, command));
@@ -40,8 +34,9 @@ for (const file of loadFiles('commands')) {
   }
 }
 
-// Dynamically load all context menu commands from the /contextMenus directory
-for (const file of loadFiles('contextMenus')) {
+// Load all context menus from the /contextMenus directory
+const contextMenuFiles = fs.readdirSync(path.join(__dirname, 'contextMenus')).filter(file => file.endsWith('.js'));
+for (const file of contextMenuFiles) {
   const contextMenu = require(`./contextMenus/${file}`);
   client.contextMenus.set(contextMenu.data.name, contextMenu);
 }
@@ -69,15 +64,15 @@ client.once(Events.ClientReady, async () => {
   logger('Bot is online!');
 
   setRandomActivity();
-  setInterval(setRandomActivity, 1800000);
+  setInterval(setRandomActivity, 1800000); // Update activity every 30 minutes
 
   try {
     logger('Deleting all guild and global commands...');
-    await commandManager.deleteAllGuildCommands(settings.DISCORD_CLIENT_ID, settings.guildId);
-    await commandManager.deleteAllGlobalCommands(settings.DISCORD_CLIENT_ID);
+    await commandManager.deleteAllGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID);
+    await commandManager.deleteAllGlobalCommands(process.env.CLIENT_ID);
 
     logger('Registering commands and context menus...');
-    await commandManager.registerCommandsAndContextMenus(settings.DISCORD_CLIENT_ID, settings.guildId);
+    await commandManager.registerCommandsAndContextMenus(process.env.CLIENT_ID, process.env.GUILD_ID);
 
     logger('Bot setup completed successfully.');
   } catch (error) {
@@ -90,48 +85,41 @@ client.rest.on('rateLimited', (info) => {
   logger(`Rate limited: Timeout - ${info.timeout}ms, Path - ${info.path}, Method - ${info.method}`);
 });
 
-// Handle command interactions
-async function handleCommandInteraction(interaction) {
-  const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
-  if (!command) return logger(`No command or context menu found for: ${interaction.commandName}`);
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    logger(`Error executing command or context menu: ${interaction.commandName}`, error);
-    await interaction.reply({ content: 'There was an error executing this action!', ephemeral: true });
-  }
-}
-
-// Handle select menu interactions
-async function handleSelectMenuInteraction(interaction) {
-  const command = client.commands.get('moveteam') || client.commands.get('resetteam');
-  if (command && typeof command.handleSelectMenu === 'function') {
-    try {
-      await command.handleSelectMenu(interaction);
-    } catch (error) {
-      logger('Error handling select menu interaction:', error);
-      await interaction.reply({ content: 'Failed to handle team selection.', ephemeral: true });
-    }
-  }
-}
-
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
   try {
     const [action, directionOrType, teamName] = interaction.customId.split('_');
+
+    if (['approve', 'reject'].includes(action)) {
+      const approveButton = new ButtonBuilder()
+        .setCustomId(`confirmApprove_${teamName}_${directionOrType}`)
+        .setLabel('Confirm Approve')
+        .setStyle(ButtonStyle.Success);
+
+      const rejectButton = new ButtonBuilder()
+        .setCustomId(`confirmReject_${teamName}_${directionOrType}`)
+        .setLabel('Confirm Reject')
+        .setStyle(ButtonStyle.Danger);
+
+      const row = new ActionRowBuilder().addComponents(approveButton, rejectButton);
+
+      return await interaction.reply({
+        content: 'Please confirm your action.',
+        components: [row],
+        ephemeral: true
+      });
+    }
+
+    if (['confirmApprove', 'confirmReject'].includes(action)) {
+      const handler = action === 'confirmApprove' ? handleForfeitEvent : handleCompleteEvent;
+      await handler(interaction, teamName, directionOrType);
+      return await interaction.reply({ content: `${action === 'confirmApprove' ? 'Approved' : 'Rejected'} successfully.`, ephemeral: true });
+    }
+
     if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
       return await handleDirectionMove(interaction, teamName, directionOrType);
     }
-    if (action === 'forfeit') {
-      return await handleForfeitEvent(interaction, teamName, directionOrType);
-    }
-    if (action === 'complete') {
-      return await handleCompleteEvent(interaction, teamName, directionOrType);
-    }
-    const command = client.commands.get('moveteam') || client.commands.get('moveteamcoord');
-    if (command && typeof command.handleButton === 'function') {
-      return await command.handleButton(interaction);
-    }
+
     logger(`No command found for button interaction: ${interaction.customId}`);
     await interaction.reply({ content: 'Invalid button interaction.', ephemeral: true });
   } catch (error) {
@@ -143,7 +131,7 @@ async function handleButtonInteraction(interaction) {
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
   const { customId } = interaction;
-  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('resetteam') : client.commands.get('moveteamcoord');
+  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('reset_team') : client.commands.get('move_team_by_coord');
   if (command && typeof command.handleModal === 'function') {
     try {
       await command.handleModal(interaction);
@@ -154,17 +142,38 @@ async function handleModalInteraction(interaction) {
   }
 }
 
+// Handle command interactions
+async function handleCommandInteraction(interaction) {
+  const command = client.commands.get(interaction.commandName) || client.contextMenus.get(interaction.commandName);
+  if (!command) {
+    logger(`No command or context menu found for: ${interaction.commandName}`);
+    return;
+  }
+
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    logger(`Error executing command or context menu: ${interaction.commandName}`, error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: 'There was an error executing this action!', ephemeral: true });
+    }
+  }
+}
+
 // Main interaction handler
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isCommand()) return await handleCommandInteraction(interaction);
     if (interaction.isMessageContextMenuCommand()) return await handleCommandInteraction(interaction);
-    if (interaction.isStringSelectMenu()) return await handleCommandInteraction(interaction);
     if (interaction.isButton()) return await handleButtonInteraction(interaction);
     if (interaction.isModalSubmit()) return await handleModalInteraction(interaction);
+
+    logger('Unhandled interaction type received.');
   } catch (error) {
     logger('Error in interaction handling:', error);
-    await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: 'An error occurred while handling your request.', ephemeral: true });
+    }
   }
 });
 

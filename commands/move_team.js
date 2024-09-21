@@ -8,7 +8,7 @@ const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('moveteam')
+    .setName('move_team')
     .setDescription('Move a team by selecting a direction')
     .addStringOption(option =>
       option.setName('team')

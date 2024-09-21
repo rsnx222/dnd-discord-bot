@@ -9,7 +9,7 @@ const { checkRole } = require('../helpers/checkRole');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('showmap')
+    .setName('show_map')
     .setDescription('Show the current map with team locations')
     .addStringOption(option =>
       option.setName('team')

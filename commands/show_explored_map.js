@@ -7,7 +7,7 @@ const { logger } = require('../helpers/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('showexploredmap')
+    .setName('show_explored_map')
     .setDescription('Show a fully explored map without any team locations'),
 
   async execute(interaction) {

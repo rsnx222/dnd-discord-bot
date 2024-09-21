@@ -4,7 +4,7 @@ require('dotenv').config();
 
 module.exports = {
   guildId: '1242722293700886591',
-  DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+  CLIENT_ID: process.env.CLIENT_ID,
   DISCORD_TOKEN: process.env.DISCORD_TOKEN,
   DB_HOST: process.env.DB_HOST,
   DB_USER: process.env.DB_USER,
