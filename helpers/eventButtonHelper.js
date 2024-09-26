@@ -8,14 +8,18 @@ function generateEventButtons(eventTypes, teamName, isEventCompleted = false) {
     const eventTypeArray = Array.isArray(eventTypes) ? eventTypes : [eventTypes]; // Handle multiple event types
     const eventButtons = new ActionRowBuilder();
 
-    if (isEventCompleted || eventTypeArray.every(type => type === 'transport link')) {
-        // Show "Choose Direction" or "Use Transport" button only if events are completed or if the tile only has transport
-        eventButtons.addComponents(
-            new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
-        );
-        eventButtons.addComponents(
-            new ButtonBuilder().setCustomId(`use_transport_${teamName}`).setLabel('Use Transport').setStyle(ButtonStyle.Secondary)
-        );
+    if (isEventCompleted) {
+        // Show "Use Transport" if available after all events are completed
+        if (eventTypeArray.includes('transport link')) {
+            eventButtons.addComponents(
+                new ButtonBuilder().setCustomId(`use_transport_${teamName}`).setLabel('Use Transport').setStyle(ButtonStyle.Secondary)
+            );
+        } else {
+            // Show "Choose Direction" only when no transport links are present
+            eventButtons.addComponents(
+                new ButtonBuilder().setCustomId(`choose_direction_${teamName}`).setLabel('Choose Direction').setStyle(ButtonStyle.Primary)
+            );
+        }
         return eventButtons;
     }
 
@@ -38,7 +42,7 @@ function generateEventButtons(eventTypes, teamName, isEventCompleted = false) {
                     new ButtonBuilder().setCustomId(`forfeit_puzzle_${teamName}`).setLabel('Forfeit Puzzle').setStyle(ButtonStyle.Danger)
                 );
                 break;
-            case 'quest':  // Add handling for quests
+            case 'quest':
                 eventButtons.addComponents(
                     new ButtonBuilder().setCustomId(`complete_quest_${teamName}`).setLabel('Complete Quest').setStyle(ButtonStyle.Success)
                 );

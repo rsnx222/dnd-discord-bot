@@ -90,6 +90,21 @@ async function handleButtonInteraction(interaction) {
   try {
     const [action, directionOrType, teamName] = interaction.customId.split('_');
 
+    // Check for direction buttons from /move_team command
+    if (['north', 'south', 'west', 'east'].includes(action)) {
+      const moveTeamCommand = require('./commands/move_team');
+      return await moveTeamCommand.handleButton(interaction);
+    }
+
+    // Handle 'choose_direction' button interaction
+    if (action === `choose_direction_${teamName}`) {
+      return await interaction.reply({ content: 'Choose a direction to move:', ephemeral: true });
+    }
+
+    if (action === 'use_transport') {
+      return await interaction.reply({ content: 'You have used the transport link.', ephemeral: true });
+    }
+
     if (['approve', 'reject'].includes(action)) {
       const approveButton = new ButtonBuilder()
         .setCustomId(`confirmApprove_${teamName}_${directionOrType}`)

@@ -53,7 +53,6 @@ module.exports = {
       await handleDirectionMove(interaction, selectedTeam, direction);  // Delegate movement handling
     } else if (direction === 'complete') {
       // Task completion logic (if applicable)
-      // If you need to complete a task, implement that here
     }
   }
 };

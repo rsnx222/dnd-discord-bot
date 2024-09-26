@@ -2,7 +2,7 @@
 
 const { generateMapImage } = require('./mapGenerator');
 const { generateEventButtons } = require('./eventButtonHelper');
-const { getTeamData } = require('./databaseHelper');
+const { getTeamData, getEventProgressStatus } = require('./databaseHelper');
 const { logger } = require('./logger');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const tiles = require('../config/tiles');
@@ -45,7 +45,7 @@ function generateEventMessage(tileData, eventIndex = 0) {
   return message;
 }
 
-async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData) {
+async function sendMapAndEvent(teamName, newTile, interaction, channel, eventIndex = 0, isEventComplete = false, teamData = null) {
   try {
     if (!newTile || typeof newTile !== 'string' || newTile.length < 2) {
       logger('Invalid tile format detected:', newTile);
@@ -55,11 +55,11 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
     logger(`sendMapAndEvent called for team ${teamName}, tile ${newTile}`);
 
-    // Ensure that teamData and exploredTiles are valid
     if (!teamData || !teamData.exploredTiles) {
       logger('teamData or exploredTiles is missing. Fetching the latest data...');
-      // Fetch team data from the database or initialize default values
-      teamData = await getTeamData(teamName);
+      const allTeamData = await getTeamData();
+      teamData = allTeamData.find(team => team.teamName === teamName);
+
       if (!teamData || !teamData.exploredTiles) {
         logger(`Failed to retrieve explored tiles for team ${teamName}`);
         await interaction.editReply({ content: 'Could not retrieve team data. Please try again later.' });
@@ -72,30 +72,15 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
     await channel.send({
       files: [{ attachment: mapImagePath, name: 'map.png' }],
-      content: `Team ${teamName} has moved to tile ${newTile}.`,
+      content: `Team ${teamName} has moved to tile ${newTile}.`
     });
 
-    const tileData = tiles[newTile];
-    if (!tileData) {
-      logger(`Tile data not found for tile ${newTile}`);
-      await interaction.editReply({ content: `No events found for tile ${newTile}. Setting up camp to rest.` });
+    // Check if the tile's task has been completed
+    const eventStatus = await getEventProgressStatus(teamName, newTile);
 
-      const directionButtons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`move_south_${teamName}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`move_west_${teamName}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
-      );
-
-      await channel.send({ content: 'You set up camp and rest for the night. Choose a direction to move:', components: [directionButtons] });
-      return;
-    }
-
-    const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
-
-    if (eventTypes.includes('reset')) {
-      const resetMessage = generateEventMessage(tileData, eventIndex);
-      await channel.send(resetMessage);
+    if (eventStatus === "completed") {
+      // Task has been completed, show message and direction buttons
+      await channel.send(`✅ You've already cleared this area of the map. Choose a direction to continue your team's journey.`);
 
       const directionButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
@@ -106,10 +91,41 @@ async function sendMapAndEvent(teamName, newTile, interaction, channel, eventInd
 
       await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
     } else {
+      const tileData = tiles[newTile];
+      if (!tileData) {
+        logger(`Tile data not found for tile ${newTile}`);
+        await interaction.editReply({ content: `No events found for tile ${newTile}. Setting up camp to rest.` });
+
+        const directionButtons = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_south_${teamName}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_west_${teamName}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        );
+
+        await channel.send({ content: 'You set up camp and rest for the night. Choose a direction to move:', components: [directionButtons] });
+        return;
+      }
+
+      const eventTypes = Array.isArray(tileData.event_type) ? tileData.event_type : [tileData.event_type];
+
+      if (eventTypes.includes('reset')) {
+        await channel.send(`🔄 You find yourself in a familiar place. Choose a direction to continue.`);
+        const directionButtons = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`move_north_${teamName}`).setLabel('⬆️ North').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_south_${teamName}`).setLabel('⬇️ South').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_west_${teamName}`).setLabel('⬅️ West').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`move_east_${teamName}`).setLabel('➡️ East').setStyle(ButtonStyle.Primary)
+        );
+
+        await channel.send({ content: 'Choose a direction to move:', components: [directionButtons] });
+        return;  // Ensure no further event buttons are processed for reset
+      }
+
       const eventMessage = generateEventMessage(tileData, eventIndex);
       await channel.send(`Event starts for team ${teamName} at tile ${newTile}!\n\n**${eventMessage}**\n\n> ${tileData.task}`);
 
-      const eventButtons = generateEventButtons(eventTypes, teamName, isEventComplete);
+      const eventButtons = generateEventButtons(eventTypes.filter(type => type !== 'transport link'), teamName, isEventComplete);
       await channel.send({ components: [eventButtons] });
     }
 
