@@ -1,56 +1,27 @@
 // rewardsPenaltiesHandler.js
 
 const { logger } = require('./logger');
+const { addTeamRewardPenalty, getTeamChannelId } = require('./databaseHelper');
 
-// Reward and Penalty pools for different event types
+// Updated Reward and Penalty pools with new item effects
 const eventOutcomes = {
   rewards: {
-    quest: [
-      { outcome: 'Increased movement speed for 24 hours' },
-      { outcome: 'A coin that can skip one event requirement' }
+    general: [
+      { itemName: 'Swift Boots', description: 'Auto-completes the next task you are given.' },
+      { itemName: 'Skip Coin', description: 'Can complete a task of your choice.' },
+      { itemName: 'Clue Map', description: 'Reveals a hidden tile of your choice on the map.' },
     ],
-    challenge: [
-      { outcome: 'Buff to next challenge (requirements reduced)' },
-      { outcome: 'Bonus clue for next puzzle' }
-    ],
-    boss: [
-      { outcome: 'Double rewards from next boss' },
-      { outcome: 'Unlock a new special ability' }
-    ],
-    puzzle: [
-      { outcome: 'Extra attempt at next puzzle' },
-      { outcome: 'Hint for future puzzle' }
-    ],
-    transport: [
-      { outcome: 'Free transport to a distant tile' },
-      { outcome: 'Teleport to any explored tile' }
-    ]
   },
   penalties: {
     general: [
-      { outcome: 'Movement restriction for 24 hours' },
-      { outcome: 'Teleport to a random tile' },
-      { outcome: 'Extra challenge on next tile' }
+      { itemName: 'Heavy Burden', description: 'Movement restriction for 24 hours.' },
+      { itemName: 'Extra Challenge', description: 'An extra challenge on the next tile.' },
     ],
-    boss: [
-      { outcome: 'Teleport to a random tile' },
-      { outcome: 'Movement restriction for 24 hours' },
-      { outcome: 'Extra challenge on next tile' }
-    ],
-    challenge: [
-      { outcome: 'Teleport to a random tile' },
-      { outcome: 'Movement restriction for 24 hours' },
-      { outcome: 'Extra challenge on next tile' }
-    ],
-    puzzle: [
-      { outcome: 'Lose one attempt at a future puzzle' },
-      { outcome: 'No hint for future puzzles' }
-    ]
-  }
+  },
 };
 
 // Helper function to process outcomes (both rewards and penalties)
-async function processOutcome(teamName, eventType, outcomeType) {
+async function processOutcome(teamName, eventType, outcomeType, client, interaction) {
   const eventOutcomesList = eventOutcomes[outcomeType][eventType.toLowerCase()] || eventOutcomes[outcomeType].general;
 
   if (!eventOutcomesList) {
@@ -58,10 +29,10 @@ async function processOutcome(teamName, eventType, outcomeType) {
     return;
   }
 
-  // For rewards, apply 20% chance before selecting an outcome
+  // For rewards, apply 1 in 3 chance before selecting an outcome
   if (outcomeType === 'rewards') {
-    const rewardRoll = Math.random();
-    if (rewardRoll > 0.2) {
+    const rewardRoll = Math.floor(Math.random() * 3); // 0, 1, or 2
+    if (rewardRoll !== 0) {
       logger(`No reward applied for ${teamName} after completing ${eventType}`);
       return;
     }
@@ -70,20 +41,30 @@ async function processOutcome(teamName, eventType, outcomeType) {
   const randomIndex = Math.floor(Math.random() * eventOutcomesList.length);
   const selectedOutcome = eventOutcomesList[randomIndex];
 
-  logger(`${outcomeType === 'rewards' ? 'Reward' : 'Penalty'} for ${teamName} after ${outcomeType === 'rewards' ? 'completing' : 'forfeiting'} ${eventType}: ${selectedOutcome.outcome}`);
-  // Apply the outcome logic to the team (e.g., update the database, apply effects, etc.)
+  logger(`${outcomeType === 'rewards' ? 'Reward' : 'Penalty'} for ${teamName}: ${selectedOutcome.itemName}`);
+
+  // Add the reward or penalty to the team's records
+  await addTeamRewardPenalty(teamName, outcomeType.slice(0, -1), selectedOutcome.itemName, selectedOutcome.description);
+
+  // Notify the team
+  const channelId = await getTeamChannelId(teamName);
+  if (channelId && client) {
+    const channel = await client.channels.fetch(channelId);
+    if (channel) {
+      const message = `Your team received a ${outcomeType === 'rewards' ? 'reward' : 'penalty'}: **${selectedOutcome.itemName}** - ${selectedOutcome.description}`;
+      await channel.send(message);
+    }
+  }
 }
 
-// Apply rewards based on event completion
-async function applyReward(teamName, eventType) {
+async function applyReward(teamName, eventType, client, interaction) {
   logger(`Applying reward for ${teamName} after completing ${eventType}`);
-  await processOutcome(teamName, eventType, 'rewards');
+  await processOutcome(teamName, eventType, 'rewards', client, interaction);
 }
 
-// Apply penalties based on event forfeiture or failure
-async function applyPenalty(teamName, eventType) {
+async function applyPenalty(teamName, eventType, client, interaction) {
   logger(`Applying penalty for ${teamName} after forfeiting ${eventType}`);
-  await processOutcome(teamName, eventType, 'penalties');
+  await processOutcome(teamName, eventType, 'penalties', client, interaction);
 }
 
 module.exports = {

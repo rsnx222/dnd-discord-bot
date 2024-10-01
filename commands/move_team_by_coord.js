@@ -65,7 +65,7 @@ module.exports = {
 
       const updatedTeamData = {
         teamName: selectedTeam,
-        currentLocation: enteredTile, // Update current location
+        currentLocation: enteredTile,
         exploredTiles: updatedExploredTiles,
       };
 
@@ -73,7 +73,7 @@ module.exports = {
       const channel = await interaction.client.channels.fetch(channelId);
 
       // Send map and event, passing updated team data
-      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0, false, updatedTeamData); // Pass updated team data
+      await sendMapAndEvent(selectedTeam, enteredTile, interaction, channel, 0, false, updatedTeamData);
     } catch (error) {
       logger(`Error moving team ${selectedTeam}:`, error);
       await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });

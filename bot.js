@@ -6,7 +6,8 @@ const { Client, GatewayIntentBits, Events, Collection, ActivityType, ButtonBuild
 const commandManager = require('./helpers/commandManager');
 const { logger } = require('./helpers/logger');
 const { handleDirectionMove } = require('./helpers/movementLogic');
-const { handleForfeitEvent, handleCompleteEvent } = require('./helpers/eventActionHandler');
+const { handleForfeitEvent, handleCompleteEvent, handleModalSubmit } = require('./helpers/eventActionHandler');
+const { createDirectionButtons } = require('./helpers/sendMapAndEvent');
 const fs = require('fs');
 const path = require('path');
 
@@ -43,14 +44,14 @@ for (const file of contextMenuFiles) {
 
 // Randomized bot activities
 const activities = [
-  { type: ActivityType.Playing, message: "an epic battle against bosses" },
-  { type: ActivityType.Playing, message: "a dangerous dungeon crawl" },
-  { type: ActivityType.Playing, message: "quests to unlock ancient secrets" },
+  { type: ActivityType.Playing, message: "with code" },
+  { type: ActivityType.Playing, message: "along with a dangerous dungeon crawl" },
+  { type: ActivityType.Playing, message: "with fire and ancient secrets" },
   { type: ActivityType.Watching, message: "adventurers brave the wilds" },
-  { type: ActivityType.Listening, message: "the whispers of ancient lore" },
+  { type: ActivityType.Listening, message: "to whispers of ancient lore" },
   { type: ActivityType.Watching, message: "shadows creeping in the dungeon" },
   { type: ActivityType.Watching, message: "heroes solve riddles to unlock mysteries" },
-  { type: ActivityType.Listening, message: "tales of battles and lost treasures" }
+  { type: ActivityType.Listening, message: "to tales of battles and lost treasures" }
 ];
 
 // Function to set a random activity
@@ -88,7 +89,7 @@ client.rest.on('rateLimited', (info) => {
 // Handle button interactions
 async function handleButtonInteraction(interaction) {
   try {
-    const [action, directionOrType, teamName] = interaction.customId.split('_');
+    const [action, type, teamName] = interaction.customId.split('_');
 
     // Check for direction buttons from /move_team command
     if (['north', 'south', 'west', 'east'].includes(action)) {
@@ -96,23 +97,33 @@ async function handleButtonInteraction(interaction) {
       return await moveTeamCommand.handleButton(interaction);
     }
 
-    // Handle 'choose_direction' button interaction
-    if (action === `choose_direction_${teamName}`) {
-      return await interaction.reply({ content: 'Choose a direction to move:', ephemeral: true });
+    // Handle quest-related buttons
+    if (action === 'start' && type === 'quest') {
+      return await interaction.update({ content: 'Starting quest! Complete the task to proceed.', components: [] });
+    }
+    if (action === 'ignore' && type === 'quest') {
+      const directionButtons = createDirectionButtons(teamName);
+      return await interaction.update({ content: 'You ignored the quest. Choose a direction to move:', components: [directionButtons] });
     }
 
-    if (action === 'use_transport') {
-      return await interaction.reply({ content: 'You have used the transport link.', ephemeral: true });
+    // Handle transport-related buttons
+    if (action === 'use' && type === 'transport') {
+      return await interaction.update({ content: 'You have used the transport link. Moving to the destination...', components: [] });
+    }
+    if (action === 'ignore' && type === 'transport') {
+      const directionButtons = createDirectionButtons(teamName);
+      return await interaction.update({ content: 'You ignored the transport link. Choose a direction to move:', components: [directionButtons] });
     }
 
+    // Handle approval buttons
     if (['approve', 'reject'].includes(action)) {
       const approveButton = new ButtonBuilder()
-        .setCustomId(`confirmApprove_${teamName}_${directionOrType}`)
+        .setCustomId(`confirmApprove_${teamName}_${type}`)
         .setLabel('Confirm Approve')
         .setStyle(ButtonStyle.Success);
 
       const rejectButton = new ButtonBuilder()
-        .setCustomId(`confirmReject_${teamName}_${directionOrType}`)
+        .setCustomId(`confirmReject_${teamName}_${type}`)
         .setLabel('Confirm Reject')
         .setStyle(ButtonStyle.Danger);
 
@@ -125,14 +136,16 @@ async function handleButtonInteraction(interaction) {
       });
     }
 
+    // Handle approval confirmation
     if (['confirmApprove', 'confirmReject'].includes(action)) {
-      const handler = action === 'confirmApprove' ? handleForfeitEvent : handleCompleteEvent;
-      await handler(interaction, teamName, directionOrType);
+      const handler = action === 'confirmApprove' ? handleCompleteEvent : handleForfeitEvent;
+      await handler(interaction, teamName, type);
       return await interaction.reply({ content: `${action === 'confirmApprove' ? 'Approved' : 'Rejected'} successfully.`, ephemeral: true });
     }
 
-    if (['north', 'south', 'west', 'east'].includes(directionOrType)) {
-      return await handleDirectionMove(interaction, teamName, directionOrType);
+    // Handle direction movement for buttons
+    if (['north', 'south', 'west', 'east'].includes(type)) {
+      return await handleDirectionMove(interaction, teamName, type);
     }
 
     logger(`No command found for button interaction: ${interaction.customId}`);
@@ -146,16 +159,41 @@ async function handleButtonInteraction(interaction) {
 // Handle modal interactions
 async function handleModalInteraction(interaction) {
   const { customId } = interaction;
-  const command = customId.startsWith('reset_team_modal_') ? client.commands.get('reset_team') : client.commands.get('move_team_by_coord');
-  if (command && typeof command.handleModal === 'function') {
-    try {
-      await command.handleModal(interaction);
-    } catch (error) {
-      logger('Error handling modal interaction:', error);
+  try {
+    if (
+      customId.startsWith('forfeit_event_modal_') ||
+      customId.startsWith('complete_event_modal_') ||
+      customId.startsWith('submit_puzzle_modal_')
+    ) {
+      await handleModalSubmit(interaction);
+    } else if (customId.startsWith('reset_team_modal_')) {
+      const command = client.commands.get('reset_team');
+      if (command && typeof command.handleModal === 'function') {
+        await command.handleModal(interaction);
+      } else {
+        logger('No handler for modal interaction:', customId);
+        await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
+      }
+    } else if (customId.startsWith('move_team_by_coord_')) {  // Add handling for move_team_by_coord
+      const command = client.commands.get('move_team_by_coord');
+      if (command && typeof command.handleModal === 'function') {
+        await command.handleModal(interaction);
+      } else {
+        logger('No handler for modal interaction:', customId);
+        await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
+      }
+    } else {
+      logger('Unhandled modal interaction:', customId);
+      await interaction.reply({ content: 'Unhandled modal interaction.', ephemeral: true });
+    }
+  } catch (error) {
+    logger('Error handling modal interaction:', error);
+    if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({ content: 'Failed to handle modal interaction.', ephemeral: true });
     }
   }
 }
+
 
 // Handle command interactions
 async function handleCommandInteraction(interaction) {
@@ -193,3 +231,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(process.env.DISCORD_TOKEN).catch(error => logger('Failed to login the bot:', error));
+
+module.exports = { client };

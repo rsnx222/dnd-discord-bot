@@ -1,9 +1,8 @@
-// movementLogic.js
-
+const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 const databaseHelper = require('./databaseHelper');
 const { sendMapAndEvent } = require('./sendMapAndEvent');
 const { logger } = require('./logger');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const tiles = require('../config/tiles');
 
 function calculateNewTile(currentTile, direction) {
   if (!currentTile || currentTile.length < 2) {
@@ -66,28 +65,50 @@ async function handleDirectionMove(interaction, teamName, direction) {
       );
     });
 
+    // Disable buttons and update the message
     await interaction.update({
       content: `Processing movement for team ${teamName}...`,
       components: disabledButtons,
     });
 
-    const teamData = await databaseHelper.getTeamData();
-    const team = teamData.find(t => t.teamName === teamName);
-
-    if (!team || !team.currentLocation) {
+    const teamData = await databaseHelper.getTeamData(teamName); // Fetch specific team data using teamName
+    if (!teamData || !teamData.currentLocation) {
       logger(`Could not find current location for team ${teamName}`);
-      return interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+      return interaction.channel.send({ content: 'Failed to move the team. Please try again later.' });
     }
 
-    const currentLocation = team.currentLocation;
+    const currentLocation = teamData.currentLocation;
     const newTile = calculateNewTile(currentLocation, direction);
 
     if (!newTile) {
-      return interaction.editReply({ content: 'Invalid move. The team cannot move in that direction.' });
+      return interaction.channel.send({ content: 'Invalid move. The team cannot move in that direction.' });
     }
 
+    // Fetch tile data for new location
+    const tileData = tiles[newTile];
+    if (!tileData) {
+      return interaction.channel.send({ content: 'No data available for this tile.' });
+    }
+
+    // Check if the tile has multiple events (transport link, challenge, boss, etc.)
+    const hasTransportLink = tileData.event_type && tileData.event_type.includes('transport link');
+    const transportDestination = tileData.destination;
+
+    // Handle transport link event
+    if (hasTransportLink && transportDestination) {
+      logger(`Using transport link from ${newTile} to ${transportDestination}`);
+      await databaseHelper.updateTeamLocation(teamName, transportDestination);
+      await sendMapAndEvent(teamName, transportDestination, interaction, interaction.channel, 0, false, {
+        teamName: teamName,
+        currentLocation: transportDestination,
+        exploredTiles: [...new Set([...teamData.exploredTiles, newTile, transportDestination])],
+      });
+      return;
+    }
+
+    // If no transport link, proceed with regular movement
     await databaseHelper.updateTeamLocation(teamName, newTile);
-    const updatedExploredTiles = [...new Set([...team.exploredTiles, newTile])];
+    const updatedExploredTiles = [...new Set([...teamData.exploredTiles, newTile])];
     await databaseHelper.updateExploredTiles(teamName, updatedExploredTiles);
 
     const updatedTeamData = {
@@ -102,14 +123,10 @@ async function handleDirectionMove(interaction, teamName, direction) {
       await sendMapAndEvent(teamName, newTile, interaction, channel, 0, false, updatedTeamData);
     }
 
-    await interaction.editReply({
-      content: `Team ${teamName} moved to ${newTile}.`,
-    });
-
   } catch (error) {
     logger(`Error moving team ${teamName}:`, error);
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.editReply({ content: 'Failed to move the team. Please try again later.' });
+      await interaction.channel.send({ content: 'Failed to move the team. Please try again later.' });
     }
   }
 }

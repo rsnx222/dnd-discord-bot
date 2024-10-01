@@ -9,8 +9,6 @@ module.exports = {
   },
   A5: {
     event_type: 'reset',
-    description: 'Your team has been reset to the starting position.',
-    task: 'Pick a direction to begin your journey...'
   },
   A6: {
     event_type: 'challenge',
@@ -25,6 +23,7 @@ module.exports = {
   },
   A9: {
     event_type: 'transport link',
+    destination: 'C8',
     description: 'Travel through the underwater tunnel...',
     task: 'Travel through the underwater tunnel...'
   },
@@ -47,15 +46,25 @@ module.exports = {
   },
   B5: {
     event_type: 'boss',
-    description: 'You find a trap door! Pick a team member to head into the lair of Tarn Razorlor and enchant their salve amulet inside...',
-    task: 'Choose a team member to enter Tarn Razorlor’s lair and enchant a salve amulet by completing a dungeon challenge.',
+    description: 'You find a trap door! Pick a team member to head into the lair of Tarn Razorlor...',
+    task: 'Send a screenshot inside Tarn Razorlor’s lair after enchanting a salve amulet.',
     requiredScreenshots: 1
   },
   B6: {
-    event_type: 'boss',
-    description: 'Gain access to the dungeon by taking on Araxxi enough times to create your own full weapon.',
-    task: '4 screenshots of Rax loot: 1x any hilt + 1 of each leg piece (1 bottom + 1 middle + 1 top).',
-    requiredItems: 4
+    event_type: ['boss', 'transport link'],
+    description: 'Gain access to the dungeon by taking on Araxxi and then use the transport link to move to the next location.',
+    tasks: [
+      {
+        type: 'boss',
+        task: '4 screenshots of Araxxi loot: 1x any hilt + 1 of each leg piece (1 bottom + 1 middle + 1 top).',
+        requiredItems: 4
+      },
+      {
+        type: 'transport link',
+        task: 'Head deep underground into a tunnel shortcut - but where will it take you?',
+        destination: 'C6'
+      }
+    ]
   },
   B8: {
     event_type: 'boss',
@@ -71,11 +80,13 @@ module.exports = {
   },
   C3: {
     event_type: 'transport link',
+    destination: 'C4',
     description: 'Set sail across the sea...',
     task: 'Sail across the sea to the next location.'
   },
   C4: {
     event_type: 'transport link',
+    destination: 'C3',
     description: 'Set sail across the sea...',
     task: 'Sail across the sea to the next location.'
   },
@@ -86,6 +97,7 @@ module.exports = {
   },
   C6: {
     event_type: 'transport link',
+    destination: 'B6',
     description: 'Enter the tunnel...',
     task: 'Use the tunnel to move to the next location.'
   },
@@ -97,6 +109,7 @@ module.exports = {
   },
   C9: {
     event_type: 'transport link',
+    destination: '',
     description: 'Travel through the underwater tunnel...',
     task: 'Use the underwater tunnel to move to the next location.'
   },
@@ -108,6 +121,7 @@ module.exports = {
   },
   D1: {
     event_type: 'transport link',
+    destination: '',
     description: 'Travel along the river to D4.',
     task: 'Travel along the river to the next location.'
   },
@@ -119,6 +133,7 @@ module.exports = {
   },
   D4: {
     event_type: 'transport link',
+    destination: '',
     description: 'Travel along the river to D1.',
     task: 'Travel along the river to the next location.'
   },
